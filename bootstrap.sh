@@ -259,6 +259,27 @@ else
   echo "noctalia not installed, skipping."
 fi
 
+# ── 3c. Docker (dev infra daemon) ────────────────────────────────
+# The docker CLI alone is NOT enough — kind, Testcontainers, and the local
+# Supabase stack all need the SYSTEM daemon (docker.service + docker.socket).
+# Discovered 2026-09-03: a fresh CachyOS install had the CLI (via devbox in
+# the gameServerHosting repo) but no daemon at all — no unit, no package —
+# so every container workload silently failed with "Cannot connect to the
+# Docker daemon". Install the package, enable the service, and put the user
+# in the docker group (unprivileged docker/kind/Testcontainers access).
+# NOTE: group membership applies to NEW login sessions; `sudo -u roni` works
+# for already-running shells.
+
+section "Docker (daemon + group for kind/Testcontainers/Supabase)"
+sudo pacman -S --noconfirm --needed docker
+sudo systemctl enable --now docker.service
+if ! id -nG roni | grep -qw docker; then
+  sudo usermod -aG docker roni
+  echo "  roni added to docker group (applies to new login sessions)."
+else
+  echo "  roni already in docker group."
+fi
+
 # ── 4. NVIDIA verification ──────────────────────────────────────
 
 section "Routing core dumps to systemd-coredump"
@@ -530,6 +551,13 @@ if home-manager generations 2>/dev/null | head -1 | grep -q current; then
   echo "OK"
 else
   echo "FAIL"; errors=$((errors + 1))
+fi
+
+echo -n "  Docker daemon... "
+if docker info &>/dev/null; then
+  echo "OK ($(docker version --format '{{.Server.Version}}'))"
+else
+  echo "NOT RUNNING"; errors=$((errors + 1))
 fi
 
 echo -n "  Nix daemon... "
