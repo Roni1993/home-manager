@@ -29,6 +29,7 @@
         ./shell.nix
         ./user.nix
         ./programs.nix
+        ./opencode.nix
   ];
        mkHome = modules:
          home-manager.lib.homeManagerConfiguration {
