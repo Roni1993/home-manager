@@ -1,3 +1,12 @@
+# opencode runtime flags (pinned 1.18.5): background subagents via `task`
+# background:true, parallel tool calls, native question tool, references.
+# Set here (not home.sessionVariables): shell-launched opencode only inherits
+# $env from nu, and HM doesn't export sessionVariables into nu.
+$env.OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS = "true"
+$env.OPENCODE_ENABLE_PARALLEL = "true"
+$env.OPENCODE_ENABLE_QUESTION_TOOL = "true"
+$env.OPENCODE_EXPERIMENTAL_REFERENCES = "true"
+
 $env.config = {
   show_banner: false
 
