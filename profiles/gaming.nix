@@ -504,32 +504,6 @@
       }
     '';
   };
-  # opencode config (HM-managed)
-  # NOTE: the opencode-chrome-devtools plugin drives browser_* tools via its
-  # companion binary ~/.local/bin/ocx (v2, manual install, unmanaged on purpose
-  # — matches the pinned HM opencode version's plugin expectations).
-  home.file.".config/opencode/opencode.jsonc" = {
-    text = ''
-      {
-        "$schema": "https://opencode.ai/config.json",
-        "plugin": [
-          "opencode-chrome-devtools"
-        ],
-        "agent": {
-          "frontier": {
-            "mode": "subagent",
-            "model": "opencode-go/kimi-k3",
-            "description": "Deep-review and cleanup agent for the CachyOS+Nix setup (runs on Kimi K3). Use for sanity checks, cleanup, and improvement investigations.",
-            "permission": {
-              "edit": "allow",
-              "bash": "allow"
-            },
-            "prompt": "You are 'frontier', a deep-review and cleanup agent for this CachyOS + Nix hybrid setup. Investigate the environment and repo, find issues and improvement opportunities, apply only safe/trivial fixes, and report findings clearly. The specific task and scope are given when you are invoked."
-          }
-        }
-      }
-    '';
-  };
   # idle-guard plugin: signals real agent activity to opencode-idle-guard.
   # Touches ~/.cache/opencode/active on tool exec / message stream; removes it
   # on session.idle. The guard holds the hypridle inhibitor only while this
