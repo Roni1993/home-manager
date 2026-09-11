@@ -24,7 +24,7 @@
     pkgs.neovim
     pkgs.cheat
     pkgs.fzf
-    pkgs.lazygit
+    pkgs.tuicr
     pkgs.glow
     pkgs.usbutils
     pkgs.postgresql

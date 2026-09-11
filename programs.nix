@@ -584,11 +584,20 @@ in {
   };
   programs.broot.enable = true;
   programs.atuin.enable = true;
-  programs.delta.enable = true;
-  programs.delta.enableGitIntegration = true;
-  programs.delta.options = {
-    navigate = true;
-    line-numbers = true;
-    side-by-side = true;
+  programs.difftastic = {
+    enable = true;
+    git = {
+      enable = true;
+      mode = "external";
+    };
+  };
+  programs.lazygit = {
+    enable = true;
+    settings.git.diffRenderers = [
+      {
+        type = "extDiff";
+        command = "${pkgs.difftastic}/bin/difft --color=always --context={{diffContext}}";
+      }
+    ];
   };
 }
