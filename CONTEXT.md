@@ -32,12 +32,12 @@ _Avoid_: Desktop, main rig, battlestation
 Arch-based Linux distribution with a custom performance-optimized kernel (BORE scheduler, x86-64-v3 packages). Chosen over Bazzite for: mutable filesystem (full Nix compatibility), AUR access, and gaming-meta package for system-level gaming setup.
 _Avoid_: Bazzite (rejected alternative)
 
-**Stylix**:
-Nix-native system theming framework used by the gaming profile. Generates consistent color configs for Hyprland, GTK, Qt, waybar, rofi, and kitty from a single wallpaper + base16 color scheme.
+**Matugen**:
+Wallpaper-driven theming pipeline used by the gaming profile (superseded Stylix, which is disabled because nix GPU/GL builds abort on NVIDIA). `palette.py` samples the wallpaper into a Material palette + custom ANSI hues, writes `~/.cache/matugen/scheme.json`, and renders the HM-managed templates (`profiles/matugen/*.tmpl`) into app configs. Runtime outputs are matugen-owned and regenerable.
 _Avoid_: Theming engine, color scheme manager
 
 **Runtime theme switch**:
-A keybind-triggered script (complementing Stylix) that flips between light and dark palettes at runtime for tools that don't reload HM configs dynamically (kitty, waybar CSS, gsettings). Stylix sets the base; the switcher toggles live.
+Keybind-triggered scripts (Super+T `theme-toggle`, Super+W `rotate-wallpaper.sh`) that re-run the matugen pipeline in light or dark mode and reload themed surfaces in place (hyprctl, waybar, swaync, kitty, gsettings color-scheme).
 _Avoid_: Dark mode toggle, day/night mode
 
 **Gamescope**:

@@ -1,0 +1,31 @@
+[colors.primary]
+background = "{{ colors.terminal_background.default.hex | auto_lightness: 10 }}"
+foreground = "{{ colors.terminal_foreground.default.hex }}"
+
+[colors.cursor]
+text = "{{ colors.on_primary.default.hex }}"
+cursor = "{{ colors.primary.default.hex | to_color | saturate: 65.0, "hsl" }}"
+
+[colors.selection]
+text = "{{ colors.on_primary.default.hex }}"
+background = "{{ colors.primary.default.hex | to_color | saturate: 65.0, "hsl" }}"
+
+[colors.normal]
+black = "{{ colors.surface_variant.default.hex | to_color | set_lightness: 20 }}"
+red = "{{ colors.red.default.hex }}"
+green = "{{ colors.green.default.hex }}"
+yellow = "{{ colors.yellow.default.hex }}"
+blue = "{{ colors.blue.default.hex }}"
+magenta = "{{ colors.magenta.default.hex }}"
+cyan = "{{ colors.cyan.default.hex }}"
+white = "{{ colors.on_surface.default.hex }}"
+
+[colors.bright]
+black = "{{ colors.outline.default.hex | to_color | set_lightness: 35 }}"
+red = "{{ colors.red_bright.default.hex }}"
+green = "{{ colors.green_bright.default.hex }}"
+yellow = "{{ colors.yellow_bright.default.hex }}"
+blue = "{{ colors.blue_bright.default.hex }}"
+magenta = "{{ colors.magenta_bright.default.hex }}"
+cyan = "{{ colors.cyan_bright.default.hex }}"
+white = "{{ colors.on_surface.default.hex }}"

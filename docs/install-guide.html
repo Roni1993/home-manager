@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CachyOS Install Guide — Roni's Gaming PC</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1e27; --card2: #232936; --fg: #e6e9f0;
+    --muted: #9aa3b2; --accent: #4ea1ff; --ok: #34d399; --warn: #fbbf24; --err: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 14px 64px; }
+  header { padding: 20px 0 12px; border-bottom: 1px solid #2a2f3a; margin-bottom: 20px; }
+  h1 { font-size: 1.5em; margin: 0 0 6px; }
+  .meta { color: var(--muted); font-size: .92em; }
+  h2 {
+    font-size: 1.15em; margin: 28px 0 10px; color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .step-no {
+    background: var(--accent); color: #0b1020; border-radius: 50%;
+    width: 26px; height: 26px; min-width: 26px; display: inline-flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: .95em;
+  }
+  .card {
+    background: var(--card); border: 1px solid #2a2f3a; border-radius: 12px;
+    padding: 14px 16px; margin: 10px 0;
+  }
+  .card.hitl { border-left: 4px solid var(--warn); }
+  .card.info { border-left: 4px solid var(--accent); }
+  .card.ok { border-left: 4px solid var(--ok); }
+  .card.err { border-left: 4px solid var(--err); }
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em;
+  }
+  code { background: var(--card2); padding: 2px 6px; border-radius: 6px; }
+  pre {
+    background: #0b0e14; border: 1px solid #2a2f3a; border-radius: 8px;
+    padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  pre.cmd { border-left: 3px solid var(--ok); }
+  kbd {
+    background: var(--card2); border: 1px solid #3a4254; border-bottom-width: 3px;
+    border-radius: 5px; padding: 1px 7px; font-family: ui-monospace, monospace; font-size: .9em;
+  }
+  ul, ol { margin: 6px 0; padding-left: 22px; }
+  li { margin: 5px 0; }
+  .tag {
+    display: inline-block; font-size: .75em; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 8px; border-radius: 20px; margin-left: 6px;
+  }
+  .tag.human { background: #7c2d12; color: #fdba74; }
+  .tag.agent { background: #1e3a5f; color: #93c5fd; }
+  .check { list-style: none; padding-left: 4px; }
+  .check li::before {
+    content: "☐ "; color: var(--accent); font-size: 1.05em;
+  }
+  .okbox li::before { content: "✅ "; }
+  a { color: var(--accent); }
+  .nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+  .nav a {
+    text-decoration: none; background: var(--card2); color: var(--fg);
+    padding: 6px 12px; border-radius: 8px; font-size: .9em; border: 1px solid #2a2f3a;
+  }
+  .quote { border-left: 3px solid var(--muted); padding-left: 12px; color: var(--muted); font-style: italic; }
+  .nowrap { white-space: nowrap; }
+  footer { margin-top: 40px; color: var(--muted); font-size: .85em; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>CachyOS Install Guide</h1>
+  <div class="meta">Roni's gaming PC — RTX 3060 Ti · i5-11400F · BIOS flash → CachyOS → bootstrap<br>
+  Updated 2026-08-02 · ticket <a href="https://github.com/Roni1993/fleek/issues/7">#7</a></div>
+</header>
+
+<nav class="nav">
+  <a href="#preflight">0 · Pre-flight</a>
+  <a href="#bios">1 · BIOS flash</a>
+  <a href="#biosperf">1b · BIOS perf</a>
+  <a href="#calamares">2 · Install</a>
+  <a href="#kde">3 · First boot</a>
+  <a href="#bootstrap">4 · Bootstrap</a>
+  <a href="#verify">5 · Verify</a>
+  <a href="#agent">6 · Start agent</a>
+  <a href="#trouble">Troubleshooting</a>
+</nav>
+
+<div class="card info">
+  <strong>How to use this guide.</strong> Steps marked <span class="tag human">YOU</span> you do at the machine;
+  <span class="tag agent">AGENT</span> the agent handles. Tap the ☐ boxes to check things off as you go.
+  Everything here is already verified in a VM dry-run on 2026-08-02.
+</div>
+
+<h2 id="preflight"><span class="step-no">0</span> Pre-flight</h2>
+<div class="card">
+  <ul class="check">
+    <li>USB stick in a <strong>rear</strong> port (Kingston DataTraveler, CachyOS <code>COS_202606</code>)</li>
+    <li>USB carries BIOS <code>ROG-STRIX-B560-I-GAMING-WIFI-ASUS-2405.CAP</code> + <code>BIOSRenamer.exe</code></li>
+    <li>Phone can see this page (GitHub Pages) — keep it open</li>
+    <li>Everything important on the 4TB HDD is in <code>D:\backup-for-cachyos</code> (already verified)</li>
+  </ul>
+</div>
+
+<h2 id="bios"><span class="step-no">1</span> BIOS flash → v2405 <span class="tag human">YOU</span></h2>
+<div class="card hitl">
+  <p><strong>Goal:</strong> update BIOS from v0503 (Feb 2021) to v2405 (Dec 2025). Takes ~5 min.</p>
+  <ol>
+    <li>Power on (or reboot). Immediately mash <kbd>Del</kbd> to enter BIOS.</li>
+    <li>Press <kbd>F7</kbd> for <strong>Advanced mode</strong>.</li>
+    <li>Go to the <strong>Tool</strong> tab → <strong>ASUS EZ Flash 3</strong>.</li>
+    <li>Navigate to the USB drive (sdf3) and select <code>ROG-STRIX-B560-I-GAMING-WIFI-ASUS-2405.CAP</code>.</li>
+    <li>Confirm the flash. <strong>Do not power off or unplug — ~5 minutes.</strong> The board reboots itself.</li>
+    <li>After reboot, re-enter BIOS (<kbd>Del</kbd>) and confirm version shows <strong>v2405</strong>.</li>
+  </ol>
+  <p class="quote">If the .CAP doesn't appear: it may need renaming — run <code>BIOSRenamer.exe</code> on the USB from Windows first, then retry. Stop and ask the agent if it still fails.</p>
+</div>
+
+<h2 id="biosperf"><span class="step-no">1b</span> BIOS performance settings <span class="tag human">YOU</span></h2>
+<div class="card hitl">
+  <p><strong>Goal:</strong> while you're in the BIOS (after the flash), set these once. They matter for this hardware:
+  RTX 3060 Ti (ReBAR), DDR4 (XMP), and later KVM/VMs (VT-x/VT-d). All are safe defaults for a gaming box.</p>
+  <ol>
+    <li><strong>XMP (RAM at rated speed)</strong> — big free performance win.
+      <ul>
+        <li><kbd>F7</kbd> Advanced → <strong>Ai Tweaker</strong> tab → <strong>Ai OverClock Tuner</strong> → <strong>XMP I</strong></li>
+        <li>Pick <strong>XMP I</strong> (XMP II only if your RAM kit's XMP II profile exists and I is unstable).</li>
+        <li>If XMP makes boot fail or crash, re-enter BIOS and set Ai OverClock Tuner back to <strong>Auto</strong>.</li>
+      </ul>
+    </li>
+    <li><strong>Re-Size BAR (Resizable BAR) + Above 4G Decoding</strong> — helps the RTX 3060 Ti.
+      <ul>
+        <li><strong>Advanced</strong> tab → <strong>PCI Subsystem Settings</strong> → <strong>Above 4G Decoding</strong> = <strong>Enabled</strong></li>
+        <li>Same page → <strong>Re-Size BAR Support</strong> = <strong>Enabled</strong></li>
+      </ul>
+    </li>
+    <li><strong>VT-x and VT-d</strong> — needed later for KVM/Podman/QEMU dev VMs.
+      <ul>
+        <li><strong>Advanced</strong> tab → <strong>CPU Configuration</strong> → <strong>Intel (VMX) Virtualization Technology</strong> = <strong>Enabled</strong></li>
+        <li><strong>Advanced</strong> tab → <strong>System Agent (SA) Configuration</strong> → <strong>VT-d</strong> = <strong>Enabled</strong></li>
+      </ul>
+    </li>
+    <li><strong>CSM (Compatibility Support Module)</strong> = <strong>Disabled</strong> — CachyOS installs UEFI; pure-UEFI boot is cleaner.
+      <ul>
+        <li><strong>Boot</strong> tab → <strong>CSM</strong> → <strong>Disabled</strong> (if present on this BIOS)</li>
+      </ul>
+    </li>
+    <li><strong>Boot order</strong> — set the <strong>USB</strong> first so the installer boots cleanly, then it'll use the NVMe after install.
+      <ul>
+        <li><strong>Boot</strong> tab → <strong>Boot Option Priorities</strong></li>
+      </ul>
+    </li>
+    <li><strong>Secure Boot</strong> — leave <strong>Disabled</strong> (CachyOS works fine without it; avoids enrollment hassle).</li>
+  </ol>
+  <p>Press <kbd>F10</kbd> → <strong>Save &amp; Exit</strong> when done. If the system won't boot after XMP, re-enter BIOS and revert Ai OverClock Tuner to Auto — everything else is safe to leave on.</p>
+  <p class="quote">Skip anything that isn't present on this BIOS version — menu names vary slightly across ASUS boards. The three that really pay off: <strong>XMP</strong>, <strong>Re-Size BAR</strong>, <strong>VT-x/VT-d</strong>.</p>
+</div>
+
+<h2 id="calamares"><span class="step-no">2</span> Install CachyOS <span class="tag human">YOU</span></h2>
+<div class="card hitl">
+  <p><strong>Goal:</strong> install CachyOS on the 2TB NVMe. <strong>The 4TB HDD stays completely untouched.</strong></p>
+  <ol>
+    <li>Boot from the USB (choose it in the boot menu, <kbd>F8</kbd>). Choose <strong>CachyOS</strong> at the GRUB menu.</li>
+    <li>Wait for the live desktop (KDE), then launch <strong>Calamares</strong> (the installer).</li>
+    <li>In <strong>Partitioning</strong>, select <strong>manual</strong>, target the <strong>2TB NVMe</strong> only:
+      <ul>
+        <li><code>/boot/efi</code> — <strong>1 GB</strong>, fat32 (EFI System Partition)</li>
+        <li><code>/</code> — <strong>rest of NVMe</strong>, Btrfs</li>
+      </ul>
+    </li>
+    <li><strong>Do not touch the 4TB HDD.</strong> If Calamares offers to wipe it — decline.</li>
+    <li>User: <code>roni</code> (full name: Roman). Set a strong password.</li>
+    <li>Locale/timezone: your choice; keyboard: us.</li>
+    <li>Let the install finish, then <strong>reboot</strong>.</li>
+  </ol>
+</div>
+
+<h2 id="kde"><span class="step-no">3</span> First boot into KDE <span class="tag human">YOU</span></h2>
+<div class="card hitl">
+  <ol>
+    <li>Reboot and remove the USB when prompted.</li>
+    <li>At the SDDM login screen, <strong>keep KDE/Plasma selected</strong> (it's the default).</li>
+    <li>Log in as <code>roni</code>.</li>
+    <li>Open <strong>Konsole</strong> (terminal).</li>
+  </ol>
+</div>
+
+<h2 id="bootstrap"><span class="step-no">4</span> Run bootstrap <span class="tag agent">AGENT</span></h2>
+<div class="card info">
+  <p>Hand this off to the agent on the box. The command it runs (as <code>roni</code>):</p>
+<pre class="cmd">curl -sL https://raw.githubusercontent.com/Roni1993/fleek/main/bootstrap.sh | bash</pre>
+  <p>This installs: NVIDIA drivers → <code>cachyos-gaming-meta</code>, <code>gamescope-session-cachyos</code>,
+  <code>hyprpolkitagent</code>, Determinate Nix, flakes — and mounts the 4TB HDD <strong>read-only</strong> at
+  <code>/mnt/staging</code> (no wipe, no reformat).</p>
+  <p class="quote">If it fails partway: the box stays recoverable (<code>home-manager switch --rollback</code> / re-run).
+  Don't panic — tell the agent what you see.</p>
+</div>
+
+<h2 id="verify"><span class="step-no">5</span> Verify + restore <span class="tag agent">AGENT</span></h2>
+<div class="card">
+  <ul class="check">
+    <li>SDDM sessions present: Hyprland, Plasma/KDE, Steam Big Picture (gamescope)</li>
+    <li>NVIDIA driver: <code>nvidia-smi</code> → expect <code>610.43.03</code></li>
+    <li>HDD mounted read-only at <code>/mnt/staging</code> (correct UUID in fstab)</li>
+    <li>SSH key rotated: new ed25519 on GitHub + Pi, paper/QR backup of new key + age key</li>
+    <li>Restored keys + Firefox profile from <code>/mnt/staging/backup-for-cachyos</code></li>
+    <li>Resolution comment posted on ticket #7, then closed</li>
+  </ul>
+</div>
+
+<h2 id="agent"><span class="step-no">6</span> Start the agent <span class="tag human">YOU</span> → <span class="tag agent">AGENT</span></h2>
+<div class="card hitl">
+  <p><strong>Goal:</strong> get the agent running on the box. The repos are <strong>already cloned</strong> by
+  bootstrap — no manual <code>git clone</code> needed.</p>
+  <ol>
+    <li><strong>Add your token</strong> (one-time). In a new Konsole:
+<pre class="cmd">opencode auth login</pre>
+      …and follow the prompts to add your API provider token/key.</li>
+    <li><strong>Auth for private repos</strong> (homelab, gameServerHosting). The gaming profile sets git's
+      credential helper to <code>gh</code>, so:
+<pre class="cmd">gh auth login</pre>
+      …then (if any private clones were skipped by bootstrap) re-run bootstrap or clone manually.</li>
+    <li><strong>Start the agent</strong> in a project. In <code>~/projects/fleek</code> for ticket #7:
+<pre class="cmd">cd ~/projects/fleek && nix run .#agent</pre>
+      Or open the agent in any other project (<code>homelab</code>, <code>gameServerHosting</code>, …):
+<pre class="cmd">nix run ~/projects/fleek#agent -- homelab</pre>
+      (Same as <code>cd ~/projects/&lt;name&gt; &amp;&amp; opencode</code>.)</li>
+    <li>Point it at ticket <strong>#7</strong> and the box-side handoff:
+<pre class="cmd">gh issue view 7</pre>
+      …then tell the agent to read <code>/tmp/opencode/handoff-box-session.md</code> (or say
+      "work wayfinder ticket 7, handoff at /tmp/opencode/handoff-box-session.md").</li>
+  </ol>
+  <p><strong>Projects cloned by bootstrap</strong> into <code>~/projects</code>: <code>fleek</code>,
+  <code>homelab</code> (private), <code>gameServerHosting</code> (private), <code>JetBrainsBevy</code>,
+  <code>pico-examples</code>, <code>steam-deck-controller</code> — each on its usual branch.</p>
+  <p class="quote">After the token is in, the agent takes over from there — bootstrap, verify, SSH rotation, restore, and closing #7.</p>
+</div>
+
+<h2 id="trouble">Troubleshooting</h2>
+<div class="card err">
+  <strong>.CAP not shown in EZ Flash 3</strong> → run <code>BIOSRenamer.exe</code> on the USB, retry. Still stuck? Stop, call the agent.
+</div>
+<div class="card err">
+  <strong>Calamares wants to wipe the HDD</strong> → decline. Only the NVMe gets partitioned.
+</div>
+<div class="card err">
+  <strong>Bootstrap aborts mid-way</strong> → re-run the curl command; it's idempotent. Box is recoverable at all times.
+</div>
+<div class="card err">
+  <strong>Can't reach this page on your phone</strong> → check phone/data, or open the same URL in a browser on the PC.
+</div>
+
+<footer>
+  Part of <a href="https://github.com/Roni1993/fleek">Roni1993/fleek</a> · wayfinder ticket
+  <a href="https://github.com/Roni1993/fleek/issues/7">#7</a> · map
+  <a href="https://github.com/Roni1993/fleek/issues/5">#5</a>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+$image = {{image}}
+<* for name, value in colors *>
+${{name}} = rgba({{value.default.hex_stripped}}ff)
+<* endfor *>
+
+# clipboard history — vicinae's native clipboard:history (input_server pastes
+# the selection to the active window). Sourced file, survives reloads.
+bind=$mod, V, exec, vicinae cmd launch clipboard:history

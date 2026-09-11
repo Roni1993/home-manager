@@ -1,0 +1,22 @@
+background = {{ colors.terminal_background.default.hex | auto_lightness: 10 }}
+foreground = {{ colors.terminal_foreground.default.hex }}
+cursor-color = {{ colors.primary.default.hex | to_color | saturate: 65.0, "hsl" }}
+cursor-text = {{ colors.on_primary.default.hex }}
+selection-background = {{ colors.primary.default.hex | to_color | saturate: 65.0, "hsl" }}
+selection-foreground = {{ colors.on_primary.default.hex }}
+palette = 0={{ colors.surface_variant.default.hex | to_color | set_lightness: 20 }}
+palette = 1={{ colors.red.default.hex }}
+palette = 2={{ colors.green.default.hex }}
+palette = 3={{ colors.yellow.default.hex }}
+palette = 4={{ colors.blue.default.hex }}
+palette = 5={{ colors.magenta.default.hex }}
+palette = 6={{ colors.cyan.default.hex }}
+palette = 7={{ colors.on_surface.default.hex }}
+palette = 8={{ colors.outline.default.hex | to_color | set_lightness: 35 }}
+palette = 9={{ colors.red_bright.default.hex }}
+palette = 10={{ colors.green_bright.default.hex }}
+palette = 11={{ colors.yellow_bright.default.hex }}
+palette = 12={{ colors.blue_bright.default.hex }}
+palette = 13={{ colors.magenta_bright.default.hex }}
+palette = 14={{ colors.cyan_bright.default.hex }}
+palette = 15={{ colors.on_surface.default.hex }}

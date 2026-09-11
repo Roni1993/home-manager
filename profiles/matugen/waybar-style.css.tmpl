@@ -1,0 +1,55 @@
+* {
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 14px;
+  min-height: 0;
+  border: none;
+}
+
+window#waybar {
+  background: {{ colors.surface_container.default.hex }};
+  color: {{ colors.on_surface.default.hex }};
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+tooltip {
+  background: {{ colors.surface_container.default.hex }};
+  border-radius: 8px;
+  color: {{ colors.on_surface.default.hex }};
+  font-size: 13px;
+}
+
+#workspaces button {
+  padding: 0 6px;
+  margin: 4px 2px;
+  border-radius: 8px;
+  color: {{ colors.on_surface_variant.default.hex }};
+  background: transparent;
+}
+#workspaces button.active {
+  background: {{ colors.primary_container.default.hex }};
+  color: {{ colors.on_primary_container.default.hex }};
+}
+#workspaces button.urgent { color: {{ colors.error.default.hex }}; }
+#workspaces button:hover {
+  background: {{ colors.surface_variant.default.hex }};
+  color: {{ colors.on_surface.default.hex }};
+}
+
+#window, #mpris, #clock, #custom-idle, #bluetooth, #pulseaudio,
+#network, #temperature, #cpu, #memory, #battery, #custom-updates, #custom-power {
+  padding: 0 10px;
+}
+
+#window {
+  color: {{ colors.on_surface_variant.default.hex }};
+  padding-left: 6px;
+}
+
+#clock { font-weight: bold; }
+
+#battery.warning { color: {{ colors.error.default.hex }}; }
+#battery.critical { color: {{ colors.error.default.hex }}; }
+
+#tray > .passive { -gtk-icon-effect: dim; }
+#tray > .needs-attention { -gtk-icon-effect: highlight; }

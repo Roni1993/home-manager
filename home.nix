@@ -44,6 +44,7 @@
     pkgs.go
     pkgs.awscli2
     pkgs.nodejs # provides node, npm, and npx
+    pkgs.jujutsu
   ];
 
   fonts.fontconfig.enable = true;

@@ -1,0 +1,184 @@
+# Helix Theme — matugen Material You, enriched for clear syntax + UI contrast
+# (Material roles only; rendered by config.toml). Every syntax family maps to a
+# distinct role so functions / keywords / types / strings / comments never collide.
+
+# --- Syntax ---
+
+"attribute" = "{{ colors.tertiary.default.hex }}"
+
+"type" = "{{ colors.secondary.default.hex }}"
+"type.builtin" = "{{ colors.secondary_fixed.default.hex }}"
+"type.enum.variant" = "{{ colors.secondary_fixed.default.hex }}"
+"constructor" = "{{ colors.primary_fixed.default.hex }}"
+
+"constant" = "{{ colors.tertiary_fixed.default.hex }}"
+"constant.builtin" = "{{ colors.tertiary.default.hex }}"
+"constant.character" = "{{ colors.tertiary_fixed.default.hex }}"
+"constant.character.escape" = "{{ colors.tertiary_container.default.hex }}"
+"constant.numeric" = "{{ colors.tertiary_fixed.default.hex }}"
+"constant.numeric.integer" = "{{ colors.tertiary_fixed.default.hex }}"
+"constant.numeric.float" = "{{ colors.tertiary.default.hex }}"
+
+"string" = "{{ colors.primary_fixed.default.hex }}"
+"string.regexp" = "{{ colors.tertiary_container.default.hex }}"
+"string.special" = "{{ colors.secondary_fixed.default.hex }}"
+"string.special.symbol" = "{{ colors.error.default.hex }}"
+"string.special.path" = "{{ colors.tertiary_fixed.default.hex }}"
+"string.special.url" = { fg = "{{ colors.tertiary.default.hex }}", modifiers = ["underlined"] }
+
+"comment" = { fg = "{{ colors.outline.default.hex }}", modifiers = ["italic"] }
+"comment.line" = { fg = "{{ colors.outline.default.hex }}", modifiers = ["italic"] }
+"comment.block" = { fg = "{{ colors.outline.default.hex }}", modifiers = ["italic"] }
+"comment.documentation" = { fg = "{{ colors.on_surface_variant.default.hex }}", modifiers = ["italic"] }
+"comment.error" = { fg = "{{ colors.error.default.hex }}", modifiers = ["italic"] }
+"comment.warning" = { fg = "{{ colors.tertiary.default.hex }}", modifiers = ["italic"] }
+
+"variable" = "{{ colors.on_background.default.hex }}"
+"variable.parameter" = { fg = "{{ colors.secondary_fixed.default.hex }}", modifiers = ["italic"] }
+"variable.builtin" = "{{ colors.error.default.hex }}"
+"variable.other.member" = "{{ colors.tertiary.default.hex }}"
+
+"label" = "{{ colors.primary_fixed.default.hex }}"
+
+"punctuation" = "{{ colors.on_surface_variant.default.hex }}"
+"punctuation.special" = "{{ colors.secondary.default.hex }}"
+"punctuation.bracket" = "{{ colors.on_surface_variant.default.hex }}"
+"punctuation.delimiter" = "{{ colors.outline.default.hex }}"
+
+"keyword" = "{{ colors.primary.default.hex }}"
+"keyword.control" = { fg = "{{ colors.primary.default.hex }}", modifiers = ["italic"] }
+"keyword.control.conditional" = { fg = "{{ colors.primary.default.hex }}", modifiers = ["italic"] }
+"keyword.control.repeat" = { fg = "{{ colors.primary.default.hex }}", modifiers = ["italic"] }
+"keyword.control.import" = "{{ colors.primary.default.hex }}"
+"keyword.operator" = "{{ colors.secondary.default.hex }}"
+"keyword.directive" = "{{ colors.secondary_fixed.default.hex }}"
+
+"operator" = "{{ colors.secondary.default.hex }}"
+"operator.arithmetic" = "{{ colors.secondary.default.hex }}"
+"operator.assignment" = "{{ colors.secondary_fixed.default.hex }}"
+"operator.comparison" = "{{ colors.secondary.default.hex }}"
+"operator.logical" = "{{ colors.primary.default.hex }}"
+
+"function" = "{{ colors.tertiary.default.hex }}"
+"function.builtin" = "{{ colors.tertiary_fixed.default.hex }}"
+"function.macro" = { fg = "{{ colors.tertiary_fixed.default.hex }}", modifiers = ["italic"] }
+"function.method" = "{{ colors.tertiary.default.hex }}"
+"function.special" = { fg = "{{ colors.primary_fixed.default.hex }}", modifiers = ["bold"] }
+"function.meta" = "{{ colors.secondary_fixed.default.hex }}"
+
+"tag" = "{{ colors.tertiary.default.hex }}"
+"tag.error" = "{{ colors.error.default.hex }}"
+"namespace" = { fg = "{{ colors.secondary_container.default.hex }}", modifiers = ["italic"] }
+
+"special" = "{{ colors.primary_fixed.default.hex }}"
+
+# --- Markup ---
+
+"markup.heading.1" = { fg = "{{ colors.error.default.hex }}", modifiers = ["bold"] }
+"markup.heading.2" = { fg = "{{ colors.primary.default.hex }}", modifiers = ["bold"] }
+"markup.heading.3" = { fg = "{{ colors.secondary.default.hex }}", modifiers = ["bold"] }
+"markup.heading.4" = { fg = "{{ colors.tertiary.default.hex }}", modifiers = ["bold"] }
+"markup.heading.5" = { fg = "{{ colors.primary_fixed.default.hex }}", modifiers = ["bold"] }
+"markup.heading.6" = { fg = "{{ colors.tertiary_fixed.default.hex }}", modifiers = ["bold"] }
+
+"markup.list" = "{{ colors.secondary.default.hex }}"
+"markup.list.unchecked" = "{{ colors.outline.default.hex }}"
+"markup.list.checked" = "{{ colors.primary_fixed.default.hex }}"
+
+"markup.bold" = { modifiers = ["bold"] }
+"markup.italic" = { modifiers = ["italic"] }
+"markup.strikethrough" = { modifiers = ["crossed_out"] }
+
+"markup.link.url" = { fg = "{{ colors.tertiary.default.hex }}", modifiers = ["underlined"] }
+"markup.link.text" = "{{ colors.primary_fixed.default.hex }}"
+"markup.link.label" = "{{ colors.secondary.default.hex }}"
+"markup.raw" = "{{ colors.on_primary_container.default.hex }}"
+"markup.raw.block" = "{{ colors.secondary_fixed.default.hex }}"
+"markup.quote" = { fg = "{{ colors.tertiary_container.default.hex }}", modifiers = ["italic"] }
+
+# --- Diff ---
+
+"diff.plus" = { fg = "{{ colors.on_primary_container.default.hex }}", bg = "{{ colors.primary_container.default.hex }}" }
+"diff.minus" = { fg = "{{ colors.on_error_container.default.hex }}", bg = "{{ colors.error_container.default.hex }}" }
+"diff.delta" = { fg = "{{ colors.on_tertiary_container.default.hex }}", bg = "{{ colors.tertiary_container.default.hex }}" }
+"diff.delta.moved" = { fg = "{{ colors.tertiary.default.hex }}", modifiers = ["italic"] }
+
+# --- UI ---
+
+"ui.background" = { fg = "{{ colors.on_background.default.hex }}", bg = "none" }
+
+"ui.text" = "{{ colors.on_background.default.hex }}"
+"ui.text.focus" = { fg = "{{ colors.primary_fixed.default.hex }}", modifiers = ["bold"] }
+"ui.text.inactive" = { fg = "{{ colors.outline.default.hex }}" }
+"ui.text.directory" = { fg = "{{ colors.tertiary.default.hex }}" }
+"ui.text.primary" = "{{ colors.on_background.default.hex }}"
+"ui.text.secondary" = { fg = "{{ colors.on_surface_variant.default.hex }}" }
+"ui.text.placeholder" = { fg = "{{ colors.outline.default.hex }}", modifiers = ["italic"] }
+"ui.text.modified" = { fg = "{{ colors.tertiary.default.hex }}" }
+"ui.text.removed" = { fg = "{{ colors.error.default.hex }}" }
+
+"ui.virtual" = "{{ colors.outline.default.hex }}"
+"ui.virtual.ruler" = { bg = "{{ colors.surface_container.default.hex }}" }
+"ui.virtual.indent-guide" = { fg = "{{ colors.outline_variant.default.hex }}" }
+"ui.virtual.inlay-hint" = { fg = "{{ colors.outline.default.hex }}" }
+"ui.virtual.jump-label" = { fg = "{{ colors.primary.default.hex }}", modifiers = ["bold"] }
+"ui.virtual.whitespace" = "{{ colors.outline_variant.default.hex }}"
+
+"ui.cursor" = { fg = "{{ colors.background.default.hex }}", bg = "{{ colors.primary_fixed.default.hex }}" }
+"ui.cursor.primary" = { fg = "{{ colors.background.default.hex }}", bg = "{{ colors.primary_fixed.default.hex }}" }
+"ui.cursor.match" = { fg = "{{ colors.on_background.default.hex }}", bg = "{{ colors.secondary_container.default.hex }}" }
+"ui.cursor.secondary" = { fg = "{{ colors.background.default.hex }}", bg = "{{ colors.secondary_fixed.default.hex }}" }
+
+"ui.cursorline" = { bg = "{{ colors.surface_container.default.hex }}" }
+"ui.cursorline.primary" = { bg = "{{ colors.surface_container_high.default.hex }}" }
+
+"ui.selection" = { fg = "{{ colors.on_primary_container.default.hex }}", bg = "{{ colors.primary_container.default.hex }}" }
+"ui.selection.primary" = { fg = "{{ colors.on_primary.default.hex }}", bg = "{{ colors.primary.default.hex }}" }
+
+"ui.highlight" = { bg = "{{ colors.secondary_container.default.hex }}", modifiers = ["bold"] }
+"ui.highlight.framebuffer" = { bg = "{{ colors.tertiary_container.default.hex }}" }
+"ui.highlight.framebuffer.error" = { bg = "{{ colors.error_container.default.hex }}" }
+"ui.highlight.framebuffer.off" = { bg = "{{ colors.surface_container_low.default.hex }}" }
+"ui.overlay" = { bg = "{{ colors.scrim.default.hex }}" }
+
+"ui.linenr" = { fg = "{{ colors.outline.default.hex }}" }
+"ui.linenr.selected" = { fg = "{{ colors.on_background.default.hex }}", bg = "{{ colors.surface_container_high.default.hex }}" }
+
+"ui.statusline" = { fg = "{{ colors.on_surface_variant.default.hex }}", bg = "{{ colors.surface_container.default.hex }}" }
+"ui.statusline.inactive" = { fg = "{{ colors.outline.default.hex }}", bg = "{{ colors.surface_container_low.default.hex }}" }
+"ui.statusline.normal" = { fg = "{{ colors.on_primary.default.hex }}", bg = "{{ colors.primary.default.hex }}", modifiers = ["bold"] }
+"ui.statusline.insert" = { fg = "{{ colors.on_secondary.default.hex }}", bg = "{{ colors.secondary.default.hex }}", modifiers = ["bold"] }
+"ui.statusline.select" = { fg = "{{ colors.on_tertiary.default.hex }}", bg = "{{ colors.tertiary.default.hex }}", modifiers = ["bold"] }
+
+"ui.popup" = { fg = "{{ colors.on_surface.default.hex }}", bg = "{{ colors.surface_container_high.default.hex }}" }
+"ui.popup.info" = { fg = "{{ colors.on_secondary_container.default.hex }}", bg = "{{ colors.secondary_container.default.hex }}" }
+"ui.popup.error" = { fg = "{{ colors.on_error_container.default.hex }}", bg = "{{ colors.error_container.default.hex }}" }
+"ui.popup.info.title" = { fg = "{{ colors.on_secondary_container.default.hex }}", bg = "{{ colors.secondary.default.hex }}" }
+"ui.popup.error.title" = { fg = "{{ colors.on_error_container.default.hex }}", bg = "{{ colors.error.default.hex }}" }
+
+"ui.window" = { fg = "{{ colors.outline.default.hex }}" }
+"ui.help" = { fg = "{{ colors.on_surface_variant.default.hex }}", bg = "{{ colors.surface_container_low.default.hex }}" }
+
+"ui.menu" = { fg = "{{ colors.on_surface.default.hex }}", bg = "{{ colors.surface_container_high.default.hex }}" }
+"ui.menu.selected" = { fg = "{{ colors.on_primary.default.hex }}", bg = "{{ colors.primary.default.hex }}" }
+"ui.menu.scroll" = { fg = "{{ colors.outline.default.hex }}" }
+"ui.menu.footnote" = "{{ colors.tertiary_fixed.default.hex }}"
+
+"ui.bufferline" = { fg = "{{ colors.outline.default.hex }}", bg = "{{ colors.surface_container_low.default.hex }}" }
+"ui.bufferline.active" = { fg = "{{ colors.on_primary.default.hex }}", bg = "{{ colors.primary.default.hex }}" }
+"ui.bufferline.background" = { bg = "{{ colors.surface_container_low.default.hex }}" }
+
+# --- Diagnostics ---
+
+"diagnostic.error" = { fg = "{{ colors.error.default.hex }}", underline = { color = "{{ colors.error.default.hex }}", style = "curl" } }
+"diagnostic.warning" = { fg = "{{ colors.tertiary.default.hex }}", underline = { color = "{{ colors.tertiary.default.hex }}", style = "curl" } }
+"diagnostic.info" = { fg = "{{ colors.primary.default.hex }}", underline = { color = "{{ colors.primary.default.hex }}", style = "curl" } }
+"diagnostic.hint" = { fg = "{{ colors.secondary.default.hex }}", underline = { color = "{{ colors.secondary.default.hex }}", style = "curl" } }
+"diagnostic.unnecessary" = { modifiers = ["dim"] }
+
+# --- Fallbacks (non-template usage) ---
+
+error = "{{ colors.error.default.hex }}"
+warning = "{{ colors.tertiary.default.hex }}"
+info = "{{ colors.primary.default.hex }}"
+hint = "{{ colors.secondary.default.hex }}"

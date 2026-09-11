@@ -1,5 +1,7 @@
 { config, pkgs, misc, ... }: {
   # Shared user-level customizations.
+  # "nu everywhere": nushell is the login shell (/etc/passwd via bootstrap.sh
+  # chsh), kitty runs `shell nu`, and bash immediately drops into nu below.
   programs.bash.initExtra = "nu && exit";
   programs.nushell = {
     configFile.source = ./config.nu;

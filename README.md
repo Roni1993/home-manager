@@ -1,14 +1,14 @@
 # Home Manager Flake
 
-Nix Home Manager configuration for WSL2 Ubuntu 24.04 development environments.
+Nix Home Manager configuration for WSL2 Ubuntu 24.04 development environments and the CachyOS gaming PC.
 
 ## What this repo contains
 
 - Shared modules: `home.nix`, `programs.nix`, `path.nix`, `shell.nix`, `user.nix`
 - User identity modules: `users/roni.nix`, `users/nixos.nix`
-- Environment modules: `profiles/work.nix`, `profiles/private.nix`
+- Environment modules: `profiles/work.nix`, `profiles/private.nix`, `profiles/gaming.nix`
 - Flake entrypoint: `flake.nix`
-- Bootstrap script: `install.sh`
+- Bootstrap scripts: `install.sh` (WSL), `bootstrap.sh` (CachyOS gaming PC — see `ROADMAP.md`)
 
 ### Home Manager targets
 
@@ -17,6 +17,7 @@ Nix Home Manager configuration for WSL2 Ubuntu 24.04 development environments.
 | `roni@work` | roni | work |
 | `nixos@work` | nixos | work |
 | `roni@private` | roni | private |
+| `roni@gaming` | roni | gaming (CachyOS + Hyprland; see `ROADMAP.md` and `docs/sanity-handoff.md`) |
 
 ### Shared packages (home.nix)
 
