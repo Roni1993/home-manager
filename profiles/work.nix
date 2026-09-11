@@ -2,6 +2,9 @@
   # Work-specific program modules
   programs.claude-code.enable = true;
 
+  # Route xdg-open URLs to the Windows default browser from WSL.
+  home.sessionVariables.BROWSER = "wsl-open";
+
   # GPG + pass for aws-sso SecureStore backend
   programs.gpg.enable = true;
 
