@@ -31,8 +31,14 @@
     pkgs.tilt
     pkgs.kubectl
     pkgs.kubectx
-    pkgs.helm
-    pkgs.krew
+    pkgs.kubernetes-helm
+    (pkgs.symlinkJoin {
+      name = "krew-kubectl-plugin";
+      paths = [ pkgs.krew ];
+      postBuild = ''
+        ln -s $out/bin/krew $out/bin/kubectl-krew
+      '';
+    })
     pkgs.dive
     pkgs.devbox
     pkgs.go
