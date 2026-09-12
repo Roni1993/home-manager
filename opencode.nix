@@ -66,7 +66,13 @@ in {
     ["file://${autoResumePlugin}/index.js", {
       "skipRootSessions": true
     }]
-  ]
+  ],
+  "references": {
+    "fleek-docs": {
+      "path": "~/projects/fleek/docs",
+      "description": "fleek repo docs: ADRs, agent/issue conventions, domain model, and research notes"
+    }
+  }
 }
       '';
     };
