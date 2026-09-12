@@ -259,6 +259,27 @@ else
   echo "noctalia not installed, skipping."
 fi
 
+# ── 3c. Docker (dev infra daemon) ────────────────────────────────
+# The docker CLI alone is NOT enough — kind, Testcontainers, and the local
+# Supabase stack all need the SYSTEM daemon (docker.service + docker.socket).
+# Discovered 2026-09-03: a fresh CachyOS install had the CLI (via devbox in
+# the gameServerHosting repo) but no daemon at all — no unit, no package —
+# so every container workload silently failed with "Cannot connect to the
+# Docker daemon". Install the package, enable the service, and put the user
+# in the docker group (unprivileged docker/kind/Testcontainers access).
+# NOTE: group membership applies to NEW login sessions; `sudo -u roni` works
+# for already-running shells.
+
+section "Docker (daemon + group for kind/Testcontainers/Supabase)"
+sudo pacman -S --noconfirm --needed docker
+sudo systemctl enable --now docker.service
+if ! id -nG roni | grep -qw docker; then
+  sudo usermod -aG docker roni
+  echo "  roni added to docker group (applies to new login sessions)."
+else
+  echo "  roni already in docker group."
+fi
+
 # ── 4. NVIDIA verification ──────────────────────────────────────
 
 section "Routing core dumps to systemd-coredump"
@@ -460,9 +481,34 @@ if [ -f /etc/plasmalogin.conf ]; then
   # drop-ins are ignored, so write the autologin session to the main file.
   printf '[Autologin]\nUser=%s\nSession=hyprland\n' "$USER" \
     | sudo tee /etc/plasmalogin.conf >/dev/null
+  # NOTE: /usr/lib/steamos/steam-set-session writes to
+  # /etc/plasmalogin.conf.d/zz-steamos-autologin.conf, a drop-in this
+  # plasmalogin ignores — so the CachyOS session-switch tool is a silent
+  # no-op here. Use HM's ~/.local/bin/switch-session (profiles/gaming.nix),
+  # which calls /usr/local/bin/fleek-set-session (installed below) instead.
   # CachyOS ships a user service that rewrites a gamescope autologin drop-in
   # (via pkexec) on every login; disable it so it can't fight this setting.
   systemctl --user disable cachyos-gamescope-autologin.service 2>/dev/null || true
+  # The same service (or a manual steam-set-session) may have already left
+  # /etc/plasmalogin.conf.d/zz-steamos-autologin.conf behind. It is an
+  # unowned, package-free leftover — and it points autologin at gamescope.
+  # plasmalogin is believed to ignore conf.d drop-ins on this build, but if
+  # that assumption is ever wrong this file is the single worst failure mode
+  # (a reboot loops straight back into game mode). Removing it costs nothing.
+  sudo rm -f /etc/plasmalogin.conf.d/zz-steamos-autologin.conf
+  sudo rmdir /etc/plasmalogin.conf.d 2>/dev/null || true
+  # CachyOS's hyprland package ships hyprland-uwsm.desktop, but the optional
+  # `uwsm` package is not installed — the entry can never start (uwsm:
+  # command not found, helper exit 127). The plasmalogin GREETER autologins
+  # into its remembered LastLoggedInSession; if that ever points at this
+  # broken entry the session end lands on a black screen (no session, greeter
+  # fallback rendering nothing useful). Remove the dead entry and repoint the
+  # greeter's state at the real Hyprland session.
+  sudo rm -f /usr/share/wayland-sessions/hyprland-uwsm.desktop
+  if [ -f /var/lib/plasmalogin/.local/state/plasma-login-greeterstaterc ]; then
+    sudo sed -i 's/^LastLoggedInSession=.*/LastLoggedInSession=hyprland.desktop/' \
+      /var/lib/plasmalogin/.local/state/plasma-login-greeterstaterc
+  fi
   echo "  plasmalogin autologin -> Hyprland ($USER)"
 elif [ -f /etc/sddm.conf ]; then
   sudo mkdir -p /etc/sddm.conf.d
@@ -472,6 +518,41 @@ elif [ -f /etc/sddm.conf ]; then
 else
   warn "No plasmalogin or SDDM config found — set Hyprland autologin manually."
 fi
+
+# Session-switch helper: lets the user flip plasmalogin's autologin session
+# without a polkit agent (TTYs and the greeter have none). A root-owned
+# wrapper + a scoped passwordless sudoers rule beat pkexec here: prompts
+# work only inside a desktop session, whereas the gamescope-session-exit
+# restore (~/.local/bin/switch-session's pair) must run headless. Every
+# write is validated against /usr/share/wayland-sessions first.
+echo "  Installing fleek-set-session helper (switch-session + gamescope-exit restore)"
+sudo tee /usr/local/bin/fleek-set-session >/dev/null <<'EOF'
+#!/bin/bash
+set -euo pipefail
+# Usage: fleek-set-session <session> [--no-restart]
+# Write the plasmalogin autologin session for the invoking user (sudo's
+# SUDO_USER). Validates against the registered wayland sessions, then
+# restarts the display manager unless --no-restart is passed.
+sess="${1:-}"
+case "$sess" in
+  "" ) echo "usage: fleek-set-session <session> [--no-restart]" >&2; exit 1 ;;
+  */*|*..*) echo "invalid session name: $sess" >&2; exit 1 ;;
+esac
+[ -f "/usr/share/wayland-sessions/$sess.desktop" ] || { echo "unknown session: $sess" >&2; exit 1; }
+[ -f /etc/plasmalogin.conf ] || { echo "no /etc/plasmalogin.conf (plasmalogin not in use?)" >&2; exit 1; }
+user="${SUDO_USER:-$(id -un)}"
+printf '[Autologin]\nUser=%s\nSession=%s\n' "$user" "$sess" > /etc/plasmalogin.conf
+if [ "${2:-}" != "--no-restart" ]; then
+  systemctl restart display-manager
+fi
+EOF
+sudo chmod 755 /usr/local/bin/fleek-set-session
+sudo tee /etc/sudoers.d/fleek-session >/dev/null <<'EOF'
+%wheel ALL=(root) NOPASSWD: /usr/local/bin/fleek-set-session
+EOF
+sudo chmod 440 /etc/sudoers.d/fleek-session
+sudo visudo -cf /etc/sudoers.d/fleek-session || warn "sudoers check failed — fix before relying on switch-session"
+echo "  fleek-set-session installed (wheel, NOPASSWD, validated session names only)"
 
 # ── 8b. Project checkouts ──────────────────────────────────────
 # Clone every local project into ~/projects, mirroring the old WSL layout.
@@ -505,6 +586,33 @@ for entry in "${PROJECTS[@]}"; do
   fi
 done
 
+# ── 8b. CPU power profile ────────────────────────────────────────
+# power-profiles-daemon always boots with its built-in default
+# (balanced → powersave governor / EPP balance_performance), which costs
+# frame-time consistency in games. This is an always-AC desktop; force the
+# performance profile at boot via a oneshot unit and on every bootstrap run.
+if command -v powerprofilesctl &>/dev/null; then
+  sudo tee /etc/systemd/system/fleek-power-performance.service >/dev/null <<'EOF'
+[Unit]
+Description=Set power-profiles-daemon profile to performance
+After=power-profiles-daemon.service
+Wants=power-profiles-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/powerprofilesctl set performance
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now fleek-power-performance.service
+  echo "  Power profile -> performance (boot unit + bootstrap)"
+else
+  warn "powerprofilesctl not found — power profile left at default"
+fi
+
 # ── 9. Post-bootstrap verification ──────────────────────────────
 
 section "Post-bootstrap verification"
@@ -516,6 +624,13 @@ if nvidia-smi --query-gpu=name --format=csv,noheader &>/dev/null; then
   echo "OK ($(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null))"
 else
   echo "FAIL"; errors=$((errors + 1))
+fi
+
+echo -n "  Power profile... "
+if powerprofilesctl get 2>/dev/null | grep -q performance; then
+  echo "OK (performance)"
+else
+  echo "NOT performance ($(powerprofilesctl get 2>/dev/null))"; errors=$((errors + 1))
 fi
 
 echo -n "  HDD at /mnt/staging... "
@@ -535,6 +650,13 @@ fi
 echo -n "  Nix daemon... "
 if systemctl status nix-daemon &>/dev/null; then
   echo "OK"
+else
+  echo "NOT RUNNING"; errors=$((errors + 1))
+fi
+
+echo -n "  Docker daemon... "
+if docker info &>/dev/null; then
+  echo "OK ($(docker version --format '{{.Server.Version}}'))"
 else
   echo "NOT RUNNING"; errors=$((errors + 1))
 fi
