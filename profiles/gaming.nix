@@ -39,6 +39,10 @@
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-color-emoji
+
+    # Terminal multiplexer — session persistence across reboots
+    # (serializes sessions to ~/.cache/zellij; `zellij attach -c` resurrects)
+    zellij
   ];
 
   # ── Git ──
@@ -98,7 +102,10 @@
 
       exec-once=awww-daemon
       exec-once=hypridle
-      exec-once=vicinae server
+      # Respawn vicinae on crash (it ABRTs occasionally, e.g. after the
+      # 0.28.1 upgrade); stop respawning on clean exit or SIGTERM (logout).
+      # Restarts are appended to ~/.local/state/vicinae-respawn.log.
+      exec-once=sh -c 'while true; do vicinae server; c=$?; [ "$c" -eq 0 ] && exit 0; echo "$(date +%FT%T) vicinae server exited with code $c — respawning" >> ~/.local/state/vicinae-respawn.log; sleep 2; done'
       # waybar + swaync are started by their HM systemd user services (no
       # exec-once — a second launch makes the service fail with "instance
       # already running" and hit start-limit). Re-apply the theme after login
@@ -950,7 +957,48 @@
   # the nix `nodejs` in home.packages — keep nodejs in the nix profile or
   # vicinae extensions (e.g. clipboard history) break without an obvious cause.
 
-  # ── Lockscreen ──
+  # ── Gamescope session switching + auto-restore (DEPRECATED) ──
+  # Kept as safety net only: if the gamescope-session desktop is ever used
+  # again, the restore hook prevents a Game-Mode autologin loop on Steam
+  # quit. The Game Mode path itself was scrapped — flicker (fixed via HDR
+  # strip) plus an unresolvable latency/fps-cap left Big Picture run from
+  # the Hyprland desktop as the chosen route (see ROADMAP). switch-session
+  # still works for any plasmalogin session flip.
+  # root helper /usr/local/bin/fleek-set-session (installed by bootstrap.sh,
+  # NOPASSWD via /etc/sudoers.d/fleek-session) rewrites /etc/plasmalogin.conf
+  # autologin and can restart the DM. switch-session is the user-side entry
+  # point: from Hyprland for `flip the next boot into Game Mode`.
+  # NOTE: it restarts the display manager -> kills this terminal's session.
+  home.file.".local/bin/switch-session" = {
+    executable = true;
+    text = ''
+      #!/usr/bin/env bash
+      set -euo pipefail
+      name="''${1:-}"
+      if [ -z "$name" ]; then
+        echo "usage: switch-session <session> (hyprland | gamescope-session | plasma)" >&2
+        exit 1
+      fi
+      sudo -n /usr/local/bin/fleek-set-session "$name"
+    '';
+  };
+  # When Steam/Game Mode exits, gamescope-session.service stops with it.
+  # ExecStopPost hooks that moment headlessly (no polkit/display needed):
+  # point autologin back at Hyprland BEFORE the display manager restarts,
+  # otherwise the greeter autologins straight back into Game Mode.
+  home.file.".config/systemd/user/gamescope-session.service.d/10-restore-desktop.conf" = {
+    text = ''
+      [Service]
+      # gamescope must run in DRM session mode, not nested-on-wayland: the
+      # user manager inherits WAYLAND_DISPLAY=wayland-1 from the Hyprland
+      # session, and gamescope then aborts ("Failed to connect to wayland
+      # socket: wayland-1"). Unset it so session/DRI mode is chosen.
+      UnsetEnvironment=WAYLAND_DISPLAY
+      ExecStopPost=/usr/bin/sudo -n /usr/local/bin/fleek-set-session hyprland --no-restart
+    '';
+  };
+
+# ── Lockscreen ──
   # hyprlock is system-provided (pacman); config managed here so the
   # nix build (NVIDIA EGL/GBM) isn't pulled in by home-manager.
   home.file.".config/hypr/hyprlock.conf" = {
@@ -1044,6 +1092,235 @@
       # palette (from kitty.toml templates, contrast-solved by palette.py);
       # reloads automatically via auto_reload_config above.
       include ~/.config/kitty/kitty-colors.conf
+      # launch (or resurrect) the main zellij workspace in a new window
+      map ctrl+shift+enter launch --cwd=current zellij attach -c main
+    '';
+  };
+
+  # ── Terminal multiplexer — zellij ──
+  # Session persistence: zellij serializes live sessions (tabs/panes/cwds/
+  # commands) to ~/.cache/zellij by default (~1 min interval);
+  # `zellij attach -c <name>` creates a session if missing and resurrects an
+  # exited one, so a terminal workspace survives a reboot by re-attaching
+  # after login. Chrome theme is the builtin base16 one-dark (same palette
+  # family as the nushell prompts; arrows between status/tab segments render
+  # automatically). Terminal colors stay matugen-driven via kitty.
+  # Keybinds: zellij's "Unlock-First (non-colliding)" preset (0.41+), inlined
+  # so home-manager owns it. Zellij starts LOCKED, so no Ctrl+<key> is stolen
+  # from apps in panes (this is what blocked opencode's Ctrl+P). Press Ctrl+g
+  # to unlock, then a mode key: p pane, t tab, n resize, s scroll, m move,
+  # o session; Enter/Esc re-locks. Alt+h/j/k/l etc. work without unlocking.
+  # Exact preset zellij 0.44.3 generates (Session -> c -> Change Mode Behavior).
+  home.file.".config/zellij/config.kdl" = {
+    text = ''
+      theme "onedark"
+      default_mode "locked"
+      keybinds clear-defaults=true {
+          normal {
+          }
+          locked {
+              bind "Ctrl g" { SwitchToMode "Normal"; }
+          }
+          resize {
+              bind "r" { SwitchToMode "Normal"; }
+              bind "h" "Left" { Resize "Increase Left"; }
+              bind "j" "Down" { Resize "Increase Down"; }
+              bind "k" "Up" { Resize "Increase Up"; }
+              bind "l" "Right" { Resize "Increase Right"; }
+              bind "H" { Resize "Decrease Left"; }
+              bind "J" { Resize "Decrease Down"; }
+              bind "K" { Resize "Decrease Up"; }
+              bind "L" { Resize "Decrease Right"; }
+              bind "=" "+" { Resize "Increase"; }
+              bind "-" { Resize "Decrease"; }
+          }
+          pane {
+              bind "p" { SwitchToMode "Normal"; }
+              bind "h" "Left" { MoveFocus "Left"; }
+              bind "l" "Right" { MoveFocus "Right"; }
+              bind "j" "Down" { MoveFocus "Down"; }
+              bind "k" "Up" { MoveFocus "Up"; }
+              bind "Tab" { SwitchFocus; }
+              bind "n" { NewPane; SwitchToMode "Locked"; }
+              bind "d" { NewPane "Down"; SwitchToMode "Locked"; }
+              bind "r" { NewPane "Right"; SwitchToMode "Locked"; }
+              bind "s" { NewPane "stacked"; SwitchToMode "Locked"; }
+              bind "x" { CloseFocus; SwitchToMode "Locked"; }
+              bind "f" { ToggleFocusFullscreen; SwitchToMode "Locked"; }
+              bind "z" { TogglePaneFrames; SwitchToMode "Locked"; }
+              bind "w" { ToggleFloatingPanes; SwitchToMode "Locked"; }
+              bind "e" { TogglePaneEmbedOrFloating; SwitchToMode "Locked"; }
+              bind "c" { SwitchToMode "RenamePane"; PaneNameInput 0;}
+              bind "i" { TogglePanePinned; SwitchToMode "Locked"; }
+          }
+          move {
+              bind "m" { SwitchToMode "Normal"; }
+              bind "n" "Tab" { MovePane; }
+              bind "p" { MovePaneBackwards; }
+              bind "h" "Left" { MovePane "Left"; }
+              bind "j" "Down" { MovePane "Down"; }
+              bind "k" "Up" { MovePane "Up"; }
+              bind "l" "Right" { MovePane "Right"; }
+          }
+          tab {
+              bind "t" { SwitchToMode "Normal"; }
+              bind "r" { SwitchToMode "RenameTab"; TabNameInput 0; }
+              bind "h" "Left" "Up" "k" { GoToPreviousTab; }
+              bind "l" "Right" "Down" "j" { GoToNextTab; }
+              bind "n" { NewTab; SwitchToMode "Locked"; }
+              bind "x" { CloseTab; SwitchToMode "Locked"; }
+              bind "s" { ToggleActiveSyncTab; SwitchToMode "Locked"; }
+              bind "b" { BreakPane; SwitchToMode "Locked"; }
+              bind "]" { BreakPaneRight; SwitchToMode "Locked"; }
+              bind "[" { BreakPaneLeft; SwitchToMode "Locked"; }
+              bind "1" { GoToTab 1; SwitchToMode "Locked"; }
+              bind "2" { GoToTab 2; SwitchToMode "Locked"; }
+              bind "3" { GoToTab 3; SwitchToMode "Locked"; }
+              bind "4" { GoToTab 4; SwitchToMode "Locked"; }
+              bind "5" { GoToTab 5; SwitchToMode "Locked"; }
+              bind "6" { GoToTab 6; SwitchToMode "Locked"; }
+              bind "7" { GoToTab 7; SwitchToMode "Locked"; }
+              bind "8" { GoToTab 8; SwitchToMode "Locked"; }
+              bind "9" { GoToTab 9; SwitchToMode "Locked"; }
+              bind "Tab" { ToggleTab; }
+          }
+          scroll {
+              bind "s" { SwitchToMode "Normal"; }
+              bind "e" { EditScrollback; SwitchToMode "Locked"; }
+              bind "f" { SwitchToMode "EnterSearch"; SearchInput 0; }
+              bind "Ctrl c" { ScrollToBottom; SwitchToMode "Locked"; }
+              bind "j" "Down" { ScrollDown; }
+              bind "k" "Up" { ScrollUp; }
+              bind "Ctrl f" "PageDown" "Right" "l" { PageScrollDown; }
+              bind "Ctrl b" "PageUp" "Left" "h" { PageScrollUp; }
+              bind "d" { HalfPageScrollDown; }
+              bind "u" { HalfPageScrollUp; }
+              bind "Alt left" { MoveFocusOrTab "left"; SwitchToMode "locked"; }
+              bind "Alt down" { MoveFocus "down"; SwitchToMode "locked"; }
+              bind "Alt up" { MoveFocus "up"; SwitchToMode "locked"; }
+              bind "Alt right" { MoveFocusOrTab "right"; SwitchToMode "locked"; }
+              bind "Alt h" { MoveFocusOrTab "left"; SwitchToMode "locked"; }
+              bind "Alt j" { MoveFocus "down"; SwitchToMode "locked"; }
+              bind "Alt k" { MoveFocus "up"; SwitchToMode "locked"; }
+              bind "Alt l" { MoveFocusOrTab "right"; SwitchToMode "locked"; }
+          }
+          search {
+              bind "Ctrl c" { ScrollToBottom; SwitchToMode "Locked"; }
+              bind "j" "Down" { ScrollDown; }
+              bind "k" "Up" { ScrollUp; }
+              bind "Ctrl f" "PageDown" "Right" "l" { PageScrollDown; }
+              bind "Ctrl b" "PageUp" "Left" "h" { PageScrollUp; }
+              bind "d" { HalfPageScrollDown; }
+              bind "u" { HalfPageScrollUp; }
+              bind "n" { Search "down"; }
+              bind "p" { Search "up"; }
+              bind "c" { SearchToggleOption "CaseSensitivity"; }
+              bind "w" { SearchToggleOption "Wrap"; }
+              bind "o" { SearchToggleOption "WholeWord"; }
+          }
+          entersearch {
+              bind "Ctrl c" "Esc" { SwitchToMode "Scroll"; }
+              bind "Enter" { SwitchToMode "Search"; }
+          }
+          renametab {
+              bind "Ctrl c" "Enter" { SwitchToMode "Locked"; }
+              bind "Esc" { UndoRenameTab; SwitchToMode "Tab"; }
+          }
+          renamepane {
+              bind "Ctrl c" "Enter" { SwitchToMode "Locked"; }
+              bind "Esc" { UndoRenamePane; SwitchToMode "Pane"; }
+          }
+          session {
+              bind "o" { SwitchToMode "Normal"; }
+              bind "d" { Detach; }
+              bind "w" {
+                  LaunchOrFocusPlugin "session-manager" {
+                      floating true
+                      move_to_focused_tab true
+                  };
+                  SwitchToMode "Locked"
+              }
+              bind "c" {
+                  LaunchOrFocusPlugin "configuration" {
+                      floating true
+                      move_to_focused_tab true
+                  };
+                  SwitchToMode "Locked"
+              }
+              bind "p" {
+                  LaunchOrFocusPlugin "plugin-manager" {
+                      floating true
+                      move_to_focused_tab true
+                  };
+                  SwitchToMode "Locked"
+              }
+              bind "a" {
+                  LaunchOrFocusPlugin "zellij:about" {
+                      floating true
+                      move_to_focused_tab true
+                  };
+                  SwitchToMode "Locked"
+              }
+              bind "s" {
+                  LaunchOrFocusPlugin "zellij:share" {
+                      floating true
+                      move_to_focused_tab true
+                  };
+                  SwitchToMode "Locked"
+              }
+              bind "l" {
+                  LaunchOrFocusPlugin "zellij:layout-manager" {
+                      floating true
+                      move_to_focused_tab true
+                  };
+                  SwitchToMode "Locked"
+              }
+          }
+          shared_except "locked" "renametab" "renamepane" {
+              bind "Ctrl g" { SwitchToMode "Locked"; }
+              bind "Ctrl q" { Quit; }
+          }
+          shared_except "renamepane" "renametab" "entersearch" "locked" {
+              bind "esc" { SwitchToMode "locked"; }
+          }
+          shared_among "normal" "locked" {
+              bind "Alt n" { NewPane; }
+              bind "Alt f" { ToggleFloatingPanes; }
+              bind "Alt i" { MoveTab "Left"; }
+              bind "Alt o" { MoveTab "Right"; }
+              bind "Alt h" "Alt Left" { MoveFocusOrTab "Left"; }
+              bind "Alt l" "Alt Right" { MoveFocusOrTab "Right"; }
+              bind "Alt j" "Alt Down" { MoveFocus "Down"; }
+              bind "Alt k" "Alt Up" { MoveFocus "Up"; }
+              bind "Alt =" "Alt +" { Resize "Increase"; }
+              bind "Alt -" { Resize "Decrease"; }
+              bind "Alt [" { PreviousSwapLayout; }
+              bind "Alt ]" { NextSwapLayout; }
+              bind "Alt p" { TogglePaneInGroup; }
+              bind "Alt Shift p" { ToggleGroupMarking; }
+          }
+          shared_except "locked" "renametab" "renamepane" {
+              bind "Enter" { SwitchToMode "Locked"; }
+          }
+          shared_except "pane" "locked" "renametab" "renamepane" "entersearch" {
+              bind "p" { SwitchToMode "Pane"; }
+          }
+          shared_except "resize" "locked" "renametab" "renamepane" "entersearch" {
+              bind "r" { SwitchToMode "Resize"; }
+          }
+          shared_except "scroll" "locked" "renametab" "renamepane" "entersearch" {
+              bind "s" { SwitchToMode "Scroll"; }
+          }
+          shared_except "session" "locked" "renametab" "renamepane" "entersearch" {
+              bind "o" { SwitchToMode "Session"; }
+          }
+          shared_except "tab" "locked" "renametab" "renamepane" "entersearch" {
+              bind "t" { SwitchToMode "Tab"; }
+          }
+          shared_except "move" "locked" "renametab" "renamepane" "entersearch" {
+              bind "m" { SwitchToMode "Move"; }
+          }
+      }
     '';
   };
 
