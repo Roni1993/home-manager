@@ -1,11 +1,36 @@
 { lib, pkgs, ... }:
 let
   pluginsDir = ./opencode/plugins;
-  filesOf = dirName:
+  agentsDir = ./opencode/agents;
+  filesOf = base: dirName:
     lib.mapAttrsToList (name: _: dirName + name)
       (lib.filterAttrs (_: type: type == "regular")
-        (builtins.readDir "${toString pluginsDir}/${dirName}"));
-  pluginFilePaths = filesOf "" ++ filesOf "notify/" ++ filesOf "kdco-primitives/";
+        (builtins.readDir "${toString base}/${dirName}"));
+  pluginFilePaths = filesOf pluginsDir "" ++ filesOf pluginsDir "notify/" ++ filesOf pluginsDir "kdco-primitives/";
+  agentFilePaths = filesOf agentsDir "";
+
+  # opencode-auto-resume, vendored with a `skipRootSessions` option so it leaves
+  # interactive root/main sessions alone (it kept sending "continue" whenever the
+  # agent paused for input). Subagents still get full recovery. Patch script:
+  # ./opencode/auto-resume/patch.py. Bump version + hash together.
+  autoResumeVersion = "1.1.15";
+  autoResumePlugin = pkgs.stdenvNoCC.mkDerivation {
+    pname = "opencode-auto-resume-patched";
+    version = autoResumeVersion;
+    src = pkgs.fetchurl {
+      url = "https://registry.npmjs.org/opencode-auto-resume/-/opencode-auto-resume-${autoResumeVersion}.tgz";
+      hash = "sha256-i1yOFdbEDHtxhy/bRYmtlk2ND5okWQxCrq/gAAFHDCY=";
+    };
+    nativeBuildInputs = [ pkgs.python3 ];
+    dontBuild = true;
+    installPhase = ''
+      runHook preInstall
+      mkdir -p $out
+      python3 ${./opencode/auto-resume/patch.py} dist/index.js
+      cp dist/index.js $out/index.js
+      runHook postInstall
+    '';
+  };
 in {
   # opencode shared config (all profiles). Gaming-specific bits (idle-guard,
   # hypridle inhibitor) stay in profiles/gaming.nix.
@@ -29,31 +54,40 @@ in {
   ];
 
   home.file = {
+    ".config/opencode/AGENTS.md".source = ./opencode/global-rules.md;
+
     ".config/opencode/opencode.jsonc" = {
+      text = ''{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-chrome-devtools",
+    "opencode-pty",
+    "opencode-cmd-provider",
+    ["file://${autoResumePlugin}/index.js", {
+      "skipRootSessions": true
+    }]
+  ]
+}
+      '';
+    };
+
+    ".config/opencode/tui.json" = {
       text = ''
         {
-          "$schema": "https://opencode.ai/config.json",
+          "$schema": "https://opencode.ai/tui.json",
           "plugin": [
-            "opencode-chrome-devtools",
-            "opencode-pty"
+            "opencode-cmd-provider"
           ],
-          "agent": {
-            "frontier": {
-              "mode": "subagent",
-              "model": "opencode-go/kimi-k3",
-              "description": "Deep-review and cleanup agent for the CachyOS+Nix setup (runs on Kimi K3). Use for sanity checks, cleanup, and improvement investigations.",
-              "permission": {
-                "edit": "allow",
-                "bash": "allow"
-              },
-              "prompt": "You are 'frontier', a deep-review and cleanup agent for this CachyOS + Nix hybrid setup. Investigate the environment and repo, find issues and improvement opportunities, apply only safe/trivial fixes, and report findings clearly. The specific task and scope are given when you are invoked."
-            }
-          }
+          "theme": "matugen"
         }
       '';
     };
   } // lib.listToAttrs (map (f: {
     name = ".config/opencode/plugins/${f}";
     value = { source = "${pluginsDir}/${f}"; };
-  }) pluginFilePaths);
+  }) pluginFilePaths)
+    // lib.listToAttrs (map (f: {
+      name = ".config/opencode/agent/${f}";
+      value = { source = "${agentsDir}/${f}"; };
+    }) agentFilePaths);
 }
