@@ -510,16 +510,19 @@
     '';
   };
   # idle-guard plugin: signals real agent activity to opencode-idle-guard.
-  # Touches ~/.cache/opencode/active on tool exec / message stream; removes it
-  # on session.idle. The guard holds the hypridle inhibitor only while this
-  # marker is fresh — so an idle-but-open TUI does NOT block the lockscreen.
+  # Touches ~/.cache/opencode/active on tool exec / message stream; clears it
+  # only once the whole session tree is idle. The parent session goes idle while
+  # background delegations keep running, so a plain session.idle clear dropped
+  # the hypridle inhibitor mid-run (the same premature-idle bug notify.ts fixes
+  # via child statuses). The guard holds the inhibitor only while this marker is
+  # fresh — so an idle-but-open TUI does NOT block the lockscreen.
   home.file.".config/opencode/plugins/idle-guard.ts" = {
     text = ''
       import * as fs from "node:fs/promises"
       import * as path from "node:path"
       import * as os from "node:os"
       import type { Plugin } from "@opencode-ai/plugin"
-      import type { Event } from "@opencode-ai/sdk"
+      import type { Event, OpencodeClient } from "@opencode-ai/sdk"
 
       const MARKER = path.join(os.homedir(), ".cache/opencode/active")
 
@@ -535,7 +538,20 @@
         } catch {}
       }
 
-      export const IdleGuardPlugin: Plugin = async () => {
+      // The marker is global, so keep it while ANY session is still working.
+      // This also covers a delegated child going idle while its siblings run,
+      // which a per-session children check would miss.
+      async function anySessionWorking(client: OpencodeClient): Promise<boolean> {
+        try {
+          const result = await client.session.status({})
+          const statuses = (result.data ?? {}) as Record<string, { type: string }>
+          return Object.values(statuses).some((s) => s.type !== "idle")
+        } catch {
+          return true
+        }
+      }
+
+      export const IdleGuardPlugin: Plugin = async ({ client }) => {
         return {
           "tool.execute.before": async () => {
             await markActive()
@@ -545,6 +561,7 @@
             if (e.type === "message.part.updated") {
               await markActive()
             } else if (e.type === "session.idle") {
+              if (await anySessionWorking(client as OpencodeClient)) return
               await clearActive()
             }
           },
