@@ -1,17 +1,17 @@
 { pkgs, lib, misc, ... }:
 let
   completionSpec = name: text: pkgs.writeText "carapace-${name}.yaml" text;
-  opencode2 = pkgs.stdenvNoCC.mkDerivation {
+  opencode2 = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "opencode2";
-    version = "0.0.0-next-202606270058";
+    version = "2.0.1";
     src = pkgs.fetchurl {
-      url = "https://registry.npmjs.org/@opencode-ai/cli-linux-x64/-/cli-linux-x64-0.0.0-next-202606270058.tgz";
-      sha256 = "09qziih6isvcr9dpc14b6z8jk19n8q0yb38iwqaz5d36dqipjsys";
+      url = "https://registry.npmjs.org/@opencode/cli-linux-x64/-/cli-linux-x64-${version}.tgz";
+      sha256 = "11d84g84098nvbzijihpvcr44lnrcwn709xihlhlcvxq12l2gcwm";
     };
     dontUnpack = true;
     installPhase = ''
       tar -xzf $src
-      install -Dm755 package/bin/opencode2 $out/bin/oc2
+      install -Dm755 package/bin/opencode $out/bin/oc2
     '';
   };
 in {
