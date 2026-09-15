@@ -110,6 +110,16 @@ in {
 
   home.activation.twgSkills = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     run ${twg}/bin/twg skills install --all-agents --yes
+    for skills_dir in "$HOME/.agents/skills" "$HOME/.claude/skills" "$HOME/.config/opencode/skills"; do
+      for skill_dir in "$skills_dir"/twg*; do
+        [ -e "$skill_dir" ] || [ -L "$skill_dir" ] || continue
+        skill_name="$(basename "$skill_dir")"
+        case "$skill_name" in
+          twg-jira|twg-confluence|twg-jira-resolve-merged-work) ;;
+          *) rm -rf "$skill_dir" ;;
+        esac
+      done
+    done
   '';
 
   home.file.".agents/skills/agent-slack".source = "${agent-slack-source}/skills/agent-slack";
