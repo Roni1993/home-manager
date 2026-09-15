@@ -1,35 +1,5 @@
 { pkgs, lib, misc, ... }:
 let
-  twg = pkgs.stdenvNoCC.mkDerivation rec {
-    pname = "twg";
-    version = "1.2.5";
-    src = pkgs.fetchurl {
-      url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v${version}";
-      hash = "sha256-vnNYJ0TYVJU4rGZS/ZAOu42KfbFNhl45xh3v1XNS54Q=";
-    };
-    dontUnpack = true;
-    installPhase = ''
-      install -Dm755 $src $out/bin/twg
-    '';
-  };
-  agent-slack = pkgs.stdenvNoCC.mkDerivation {
-    pname = "agent-slack";
-    version = "0.10.2";
-    src = pkgs.fetchurl {
-      url = "https://github.com/stablyai/agent-slack/releases/download/v0.10.2/agent-slack-linux-x64";
-      hash = "sha256-rU1l1O4sg+x+ulk5UVaOi3yXIrcpcaCejK5uCQBX1IM=";
-    };
-    dontUnpack = true;
-    installPhase = ''
-      install -Dm755 $src $out/bin/agent-slack
-    '';
-  };
-  agent-slack-source = pkgs.fetchFromGitHub {
-    owner = "stablyai";
-    repo = "agent-slack";
-    rev = "v0.10.2";
-    hash = "sha256-0eeI3Tvb4LWDXkXvvjUQyHB8UkQ/nksFHMBkFx8ZAqI=";
-  };
   completionSpec = name: text: pkgs.writeText "carapace-${name}.yaml" text;
 in {
   # Programs with Home Manager modules that are shared across all profiles.
@@ -53,13 +23,6 @@ in {
       install -Dm755 opencode $out/bin/opencode
     '';
   };
-
-  home.packages = [ twg agent-slack ];
-  home.activation.twgSkills = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run ${twg}/bin/twg skills install --all-agents --yes
-  '';
-  home.file.".agents/skills/agent-slack".source = "${agent-slack-source}/skills/agent-slack";
-  home.file.".claude/skills/agent-slack".source = "${agent-slack-source}/skills/agent-slack";
 
   programs.dircolors.enable = true;
   programs.nushell.enable = true;

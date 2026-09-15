@@ -9,28 +9,6 @@ let
   pluginFilePaths = filesOf pluginsDir "" ++ filesOf pluginsDir "notify/" ++ filesOf pluginsDir "kdco-primitives/";
   agentFilePaths = filesOf agentsDir "";
 
-  # opencode-auto-resume, vendored with a `skipRootSessions` option so it leaves
-  # interactive root/main sessions alone (it kept sending "continue" whenever the
-  # agent paused for input). Subagents still get full recovery. Patch script:
-  # ./opencode/auto-resume/patch.py. Bump version + hash together.
-  autoResumeVersion = "1.1.15";
-  autoResumePlugin = pkgs.stdenvNoCC.mkDerivation {
-    pname = "opencode-auto-resume-patched";
-    version = autoResumeVersion;
-    src = pkgs.fetchurl {
-      url = "https://registry.npmjs.org/opencode-auto-resume/-/opencode-auto-resume-${autoResumeVersion}.tgz";
-      hash = "sha256-i1yOFdbEDHtxhy/bRYmtlk2ND5okWQxCrq/gAAFHDCY=";
-    };
-    nativeBuildInputs = [ pkgs.python3 ];
-    dontBuild = true;
-    installPhase = ''
-      runHook preInstall
-      mkdir -p $out
-      python3 ${./opencode/auto-resume/patch.py} dist/index.js
-      cp dist/index.js $out/index.js
-      runHook postInstall
-    '';
-  };
 in {
   # opencode shared config (all profiles). Gaming-specific bits (idle-guard,
   # hypridle inhibitor) stay in profiles/gaming.nix.
@@ -62,10 +40,7 @@ in {
   "plugin": [
     "opencode-chrome-devtools",
     "opencode-pty",
-    "opencode-cmd-provider",
-    ["file://${autoResumePlugin}/index.js", {
-      "skipRootSessions": true
-    }]
+    "opencode-cmd-provider"
   ],
   "references": {
     "fleek-docs": {
