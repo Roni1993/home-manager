@@ -1,17 +1,5 @@
 { pkgs, lib, misc, ... }:
 let
-  twg = pkgs.stdenvNoCC.mkDerivation rec {
-    pname = "twg";
-    version = "1.2.5";
-    src = pkgs.fetchurl {
-      url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v${version}";
-      hash = "sha256-vnNYJ0TYVJU4rGZS/ZAOu42KfbFNhl45xh3v1XNS54Q=";
-    };
-    dontUnpack = true;
-    installPhase = ''
-      install -Dm755 $src $out/bin/twg
-    '';
-  };
   completionSpec = name: text: pkgs.writeText "carapace-${name}.yaml" text;
 in {
   # Programs with Home Manager modules that are shared across all profiles.
@@ -35,11 +23,6 @@ in {
       install -Dm755 opencode $out/bin/opencode
     '';
   };
-
-  home.packages = [ twg ];
-  home.activation.twgSkills = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    run ${twg}/bin/twg skills install --all-agents --yes
-  '';
 
   programs.dircolors.enable = true;
   programs.nushell.enable = true;
