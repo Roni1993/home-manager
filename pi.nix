@@ -1,4 +1,11 @@
 { pkgs, lib, inputs, ... }:
+let
+  # pi-coding-agent 0.85.1 from the targeted `nixpkgs-pi` input (see flake.nix),
+  # not the main nixpkgs pin, with the two local pi-ui patches applied and a
+  # `bin/pi` that launches the unminified entry (see pi-ui.nix). Delete that
+  # import to fall back to the unpatched package.
+  piPkg = import ./pi-ui.nix { inherit pkgs inputs; };
+in
 {
   # Pi runtime via the pi.nix flake's Home Manager module. pi-workflow
   # (github.com/Roni1993/pi-workflow) is a Pi *package* — extensions + skills,
@@ -10,9 +17,8 @@
 
   programs.pi.coding-agent = {
     enable = true;
-    # Pi 0.81.1 from the current nixpkgs pin. Bump (targeted newer nixpkgs
-    # input for pi-coding-agent only) once pi-workflow needs newer Pi APIs.
-    package = pkgs.pi-coding-agent;
+    # Pi 0.85.1 via the targeted `nixpkgs-pi` input (bump done; see flake.nix).
+    package = piPkg;
     # jail.enable = true;  # available via pi.nix; off because pi-workflow
     # spawns host tmux + jj agents, which the default jail would not reach.
   };
@@ -27,8 +33,8 @@
       "git:github.com/Roni1993/pi-workflow" \
       "npm:@dietrichgebert/ponytail" \
       "npm:@quintinshaw/pi-dynamic-workflows"; do
-      if ! ${pkgs.pi-coding-agent}/bin/pi list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "$src"; then
-        run ${pkgs.pi-coding-agent}/bin/pi install "$src"
+      if ! ${piPkg}/bin/pi list 2>/dev/null | ${pkgs.gnugrep}/bin/grep -q "$src"; then
+        run ${piPkg}/bin/pi install "$src"
       fi
     done
   '';
