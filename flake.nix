@@ -5,6 +5,16 @@
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # Targeted newer nixpkgs for pi-coding-agent only. Deliberately NO
+    # `follows` on the main nixpkgs pin: this input is bumped independently so
+    # Pi can track newer upstream releases without a whole-flake bump.
+    nixpkgs-pi.url = "github:nixos/nixpkgs/nixos-unstable";
+
+    # Pi coding agent runtime + Home Manager module. pi-workflow is a Pi
+    # package (extensions + skills), installed into Pi's store at activation.
+    pi.url = "github:lukasl-dev/pi.nix";
+    pi.inputs.nixpkgs.follows = "nixpkgs";
+
     # Home manager
     home-manager.url = "https://flakehub.com/f/nix-community/home-manager/0.1.tar.gz";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -30,6 +40,7 @@
         ./user.nix
         ./programs.nix
         ./opencode.nix
+        ./pi.nix
   ];
        mkHome = modules:
          home-manager.lib.homeManagerConfiguration {
