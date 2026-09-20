@@ -1,4 +1,4 @@
-# pi-ui: pi-coding-agent 0.85.1 with the two local pi-patches applied, plus a
+# pi-ui: pi-coding-agent 0.85.1 with the three local pi-patches applied, plus a
 # `bin/pi` that launches the UNMINIFIED dist entry so the patches take effect.
 #
 # Why a runCommand copy instead of overrideAttrs/postPatch:
@@ -41,6 +41,7 @@ pkgs.runCommand "pi-coding-agent-ui-${pi.version}"
   # here. Each is idempotent and exits nonzero if an anchor drifts.
   ${nodejs}/bin/node ${./pi-patches/transcript-seam.mjs} $out
   ${nodejs}/bin/node ${./pi-patches/pi-tui-backdrop.mjs} $out
+  ${nodejs}/bin/node ${./pi-patches/loaded-resources-seam.mjs} $out
 
   # Replace the makeWrapper-generated `pi` (which execs dist/bundle/cli.js, the
   # minified bundle) with one that preserves the original wrapper's guarantees
