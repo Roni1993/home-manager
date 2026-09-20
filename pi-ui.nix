@@ -8,8 +8,7 @@
 #   tsgo + esbuild rebuild. Copying the substituted store path is ~207 MB of
 #   file copies and a couple of in-place regex patches; cheap and cacheable.
 #
-# Reversible: delete this file and point `programs.pi.coding-agent.package`
-# back at `piPkg` in pi.nix.
+# Revert: pi.nix holds the single instruction to drop this wrapper — see there.
 #
 # Evaluate standalone:
 #   nix build --impure --expr \
@@ -54,7 +53,7 @@ pkgs.runCommand "pi-coding-agent-ui-${pi.version}"
 export PATH="${fd}/bin:${ripgrep}/bin:$PATH"
 export PI_SKIP_VERSION_CHECK="''${PI_SKIP_VERSION_CHECK-1}"
 export PI_TELEMETRY="''${PI_TELEMETRY-0}"
-exec ${nodejs}/bin/node ${placeholder "out"}/lib/node_modules/pi-monorepo/dist/cli.js "$@"
+exec -a "$0" ${nodejs}/bin/node ${placeholder "out"}/lib/node_modules/pi-monorepo/dist/cli.js "$@"
 PI_UI_WRAPPER
   chmod 755 $out/bin/pi
 ''
