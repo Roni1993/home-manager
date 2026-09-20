@@ -255,12 +255,75 @@ const REPLACEMENT_STREAM = [
   "                    this.streamingMessage = event.message;",
 ].join("\n");
 
+// ---------------------------------------------------------------------------
+// 6. Compaction + branch summaries. Stock builds these components directly (no
+//    createBuiltinMessageComponent call), so the role renderer never ran. Route
+//    them through the same helper.
+// ---------------------------------------------------------------------------
+const ANCHOR_COMPACTION = [
+  '            case "compactionSummary": {',
+  "                this.chatContainer.addChild(new Spacer(1));",
+  "                const component = new CompactionSummaryMessageComponent(message, this.getMarkdownThemeWithSettings());",
+  "                component.setExpanded(this.toolOutputExpanded);",
+  "                this.chatContainer.addChild(component);",
+  "                break;",
+  "            }",
+].join("\n");
+
+const REPLACEMENT_COMPACTION = [
+  '            case "compactionSummary": {',
+  `                /* ${MARKER} */`,
+  '                const seamCompaction = this.createBuiltinMessageComponent("compactionSummary", message);',
+  "                if (seamCompaction && seamCompaction.hasContent()) {",
+  "                    this.chatContainer.addChild(new Spacer(1));",
+  "                    this.chatContainer.addChild(seamCompaction);",
+  "                    break;",
+  "                }",
+  `                /* /${MARKER} */`,
+  "                this.chatContainer.addChild(new Spacer(1));",
+  "                const component = new CompactionSummaryMessageComponent(message, this.getMarkdownThemeWithSettings());",
+  "                component.setExpanded(this.toolOutputExpanded);",
+  "                this.chatContainer.addChild(component);",
+  "                break;",
+  "            }",
+].join("\n");
+
+const ANCHOR_BRANCH = [
+  '            case "branchSummary": {',
+  "                this.chatContainer.addChild(new Spacer(1));",
+  "                const component = new BranchSummaryMessageComponent(message, this.getMarkdownThemeWithSettings());",
+  "                component.setExpanded(this.toolOutputExpanded);",
+  "                this.chatContainer.addChild(component);",
+  "                break;",
+  "            }",
+].join("\n");
+
+const REPLACEMENT_BRANCH = [
+  '            case "branchSummary": {',
+  `                /* ${MARKER} */`,
+  '                const seamBranch = this.createBuiltinMessageComponent("branchSummary", message);',
+  "                if (seamBranch && seamBranch.hasContent()) {",
+  "                    this.chatContainer.addChild(new Spacer(1));",
+  "                    this.chatContainer.addChild(seamBranch);",
+  "                    break;",
+  "                }",
+  `                /* /${MARKER} */`,
+  "                this.chatContainer.addChild(new Spacer(1));",
+  "                const component = new BranchSummaryMessageComponent(message, this.getMarkdownThemeWithSettings());",
+  "                component.setExpanded(this.toolOutputExpanded);",
+  "                this.chatContainer.addChild(component);",
+  "                break;",
+  "            }",
+].join("\n");
+
 const EDITS = [
   ["BuiltinMessageRendererComponent adapter", ANCHOR_CLASS, WRAPPER_CLASS],
   ["createBuiltinMessageComponent helper", ANCHOR_HELPER, REPLACEMENT_HELPER],
   ["static user turn", ANCHOR_USER, REPLACEMENT_USER],
   ["static assistant turn", ANCHOR_ASSISTANT, REPLACEMENT_ASSISTANT],
   ["streaming assistant turn", ANCHOR_STREAM, REPLACEMENT_STREAM],
+  ["compaction summary turn", ANCHOR_COMPACTION, REPLACEMENT_COMPACTION],
+  ["branch summary turn", ANCHOR_BRANCH, REPLACEMENT_BRANCH],
 ];
 
 let out = source;
