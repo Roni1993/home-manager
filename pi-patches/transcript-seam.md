@@ -93,10 +93,10 @@ needed. `registerMessageRenderer` (`dist/core/extensions/loader.js` L274–277)
 stores into a plain `Map` keyed by an arbitrary string, so role keys are
 accepted without any change.
 
-## Change (5 string replacements, ~109 inserted lines)
+## Change (5 string replacements, ~134 inserted lines)
 
 All inserted code is wrapped in `/* pi-ui:transcript-seam */` … `/* /pi-ui:transcript-seam */`
-and is ES2022-compatible, no TypeScript. Net: stock 5546 lines → patched 5655 lines.
+and is ES2022-compatible, no TypeScript. Net: stock 5546 lines → patched 5680 lines.
 
 1. **Adapter class** before `InteractiveMode` — `BuiltinMessageRendererComponent
    extends Container`. Calls the renderer with `(message, options, theme)`,
@@ -104,18 +104,33 @@ and is ES2022-compatible, no TypeScript. Net: stock 5546 lines → patched 5655 
    returned component supports them, and exposes `updateContent(message, isStreaming)`
    so the streaming loop can drive it. A throwing renderer is swallowed
    (component renders nothing) rather than crashing the transcript.
+   - **Spacing parity.** Stock `AssistantMessageComponent` prepends a
+     `Spacer(1)` before visible content when it rebuilds. The adapter replaces
+     that component, so it reproduces the same leading blank line for the
+     `"assistant"` role (`if (this.role === "assistant") this.addChild(new Spacer(1))`
+     before the returned component). Stock **user** turns get their separator from
+     `addMessageToChat` instead, which the adapter cannot cover internally (it does
+     not know the container), so the `case "user"` edit adds the same
+     `Spacer(1)` the stock branch adds. Net vertical rhythm is identical to stock;
+     without this, seam-rendered turns sat flush against the previous component.
+   - `hasContent()` returns true only when the renderer produced a component
+     (built from the same tick that produced the component, so it cannot go stale).
 2. **Helper method** `createBuiltinMessageComponent(role, message, extra)` before
    `addMessageToChat` — looks up the renderer, returns `undefined` when absent
    (default path), otherwise builds the adapter with `expanded: this.toolOutputExpanded`,
    `outputPad: this.outputPad`, `markdownTransformers: this.getMarkdownTransformers()`.
-3. **Static user turn** — consult `"user"` first; on hit add the adapter, still
-   honour `options.populateHistory`, `break`. On miss, original code runs untouched.
-4. **Static assistant turn** — consult `"assistant"` first; on hit add adapter and
-   `break`; otherwise stock `AssistantMessageComponent`.
+3. **Static user turn** — consult `"user"` first; on a **content-bearing** hit add
+   the stock `Spacer(1)` (guarded by `children.length > 0`, exactly as stock) then
+   the adapter, still honour `options.populateHistory`, `break`. On miss, original
+   code runs untouched (spacing included).
+4. **Static assistant turn** — consult `"assistant"` first; on a content-bearing
+   hit add the adapter (which already carries the leading spacer) and `break`;
+   otherwise stock `AssistantMessageComponent`.
 5. **Live streaming turn** — `this.streamingComponent = this.createBuiltinMessageComponent("assistant", event.message, { streaming: true }) ?? new AssistantMessageComponent(...)`.
    The adapter has no-op `setHideThinkingBlock` / `setHiddenThinkingLabel` so the
    existing streaming loop (`message_update`, `message_end`, `setHiddenThinkingLabel`,
-   `setOutputPad`) works unchanged.
+   `setOutputPad`) works unchanged. The adapter's own leading spacer covers the
+   live path too.
 
 Minimal diff (condensed; the script writes the full text):
 
@@ -128,7 +143,15 @@ Minimal diff (condensed; the script writes the full text):
 +    setHideThinkingBlock() { }
 +    setHiddenThinkingLabel() { }
 +    updateContent(message, isStreaming = false) { this.message = message; this.isStreaming = isStreaming; this.rebuild(); }
-+    rebuild() { /* renderer(this.message, {expanded, outputPad, isStreaming, markdownTransformers}, theme) */ }
++    rebuild() {
++        this.clear(); this.hasRenderedContent = false;
++        /* renderer(...) */
++        if (!component) return;
++        this.hasRenderedContent = true;
++        if (this.role === "assistant") this.addChild(new Spacer(1)); // stock spacing
++        /* forward setExpanded/setOutputPad */ this.addChild(component);
++    }
++    hasContent() { return this.hasRenderedContent === true; }
 +}
 +/* /pi-ui:transcript-seam */
  export class InteractiveMode {
@@ -144,12 +167,15 @@ Minimal diff (condensed; the script writes the full text):
 
              case "user": {
 +                const seamUser = this.createBuiltinMessageComponent("user", message);
-+                if (seamUser) { add; populateHistory; break; }
++                if (seamUser && seamUser.hasContent()) {
++                    if (this.chatContainer.children.length > 0) this.chatContainer.addChild(new Spacer(1)); // stock spacing
++                    add; populateHistory; break;
++                }
                  const textContent = this.getUserMessageText(message);
                  ...
              case "assistant": {
 +                const seamAssistant = this.createBuiltinMessageComponent("assistant", message);
-+                if (seamAssistant) { add; break; }
++                if (seamAssistant && seamAssistant.hasContent()) { add; break; } // spacer lives in the adapter
                  const assistantComponent = new AssistantMessageComponent(...);
                  ...
                  else if (event.message.role === "assistant") {
@@ -247,14 +273,29 @@ Observed extra checks:
   the wrapper when registered and fall through to stock components when not; a
   throwing renderer degrades to an empty component; live `message_start` with no
   renderer yields a stock `AssistantMessageComponent`.
+- Spacing reachability suite (`pi-patches/transcript-seam.test.mjs`, 6/6 passing)
+  drives the real `addMessageToChat` and asserts the child layout: user turn after
+  a previous component inserts exactly one `Spacer(1)` before the adapter; a first
+  user turn inserts none; the assistant adapter renders a blank first line (its
+  internal `Spacer(1)`); the streaming adapter does too; `hasContent()` is false
+  when the renderer returns undefined. Run it after patching a `/tmp` copy:
+  ```sh
+  cp -r /nix/store/m58mjsdjgk3zrwar1ckw2lb4q241l7j9-pi-coding-agent-0.85.1 /tmp/pi-seam \
+    && chmod -R u+w /tmp/pi-seam
+  node pi-patches/transcript-seam.mjs /tmp/pi-seam
+  node pi-patches/transcript-seam.test.mjs /tmp/pi-seam
+  # PASS — 6 transcript-seam spacing checks
+  ```
+- Real e2e (`pi-workflow/tests/ui-e2e.sh` against the nix-built patched pi):
+  PASS=36 FAIL=0 SKIP=1 (the one skip is a model run with no thinking block).
 
 ## Not verified
 
 - **No visual TUI check.** A full interactive render (real terminal, an actual
   user/assistant turn painted with a custom component) cannot be exercised
   headlessly. The seam's runtime dispatch is proven by importing the patched
-  module and driving the real `addMessageToChat` / `handleEvent` methods; actual
-  on-screen output is not.
+  module and driving the real `addMessageToChat` / `handleEvent` methods, and by
+  the tmux e2e suite; exact pixel output is not asserted.
 - **Nix wiring not exercised.** The store copy under `/tmp` is manual; patching
   at build time and launching pi via the unminified `dist/cli.js` entry is owned
   by another step.
