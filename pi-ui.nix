@@ -42,6 +42,7 @@ pkgs.runCommand "pi-coding-agent-ui-${pi.version}"
   ${nodejs}/bin/node ${./pi-patches/transcript-seam.mjs} $out
   ${nodejs}/bin/node ${./pi-patches/pi-tui-backdrop.mjs} $out
   ${nodejs}/bin/node ${./pi-patches/loaded-resources-seam.mjs} $out
+  ${nodejs}/bin/node ${./pi-patches/model-selector-seam.mjs} $out
 
   # Replace the makeWrapper-generated `pi` (which execs dist/bundle/cli.js, the
   # minified bundle) with one that preserves the original wrapper's guarantees
