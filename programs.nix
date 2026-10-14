@@ -1,6 +1,19 @@
 { pkgs, lib, misc, ... }:
 let
   completionSpec = name: text: pkgs.writeText "carapace-${name}.yaml" text;
+  opencode2 = pkgs.stdenvNoCC.mkDerivation rec {
+    pname = "opencode2";
+    version = "2.0.1";
+    src = pkgs.fetchurl {
+      url = "https://registry.npmjs.org/@opencode/cli-linux-x64/-/cli-linux-x64-${version}.tgz";
+      sha256 = "11d84g84098nvbzijihpvcr44lnrcwn709xihlhlcvxq12l2gcwm";
+    };
+    dontUnpack = true;
+    installPhase = ''
+      tar -xzf $src
+      install -Dm755 package/bin/opencode $out/bin/oc2
+    '';
+  };
 in {
   # Programs with Home Manager modules that are shared across all profiles.
   # Work- or private-specific program enables live in profiles/work.nix
@@ -23,7 +36,7 @@ in {
       install -Dm755 opencode $out/bin/opencode
     '';
   };
-
+  home.packages = [ opencode2 ];
   programs.dircolors.enable = true;
   programs.nushell.enable = true;
   programs.gh.enable = true;
