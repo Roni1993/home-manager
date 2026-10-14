@@ -3,10 +3,10 @@ let
   completionSpec = name: text: pkgs.writeText "carapace-${name}.yaml" text;
   opencode2 = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "opencode2";
-    version = "2.0.1";
+    version = "2.0.14";
     src = pkgs.fetchurl {
       url = "https://registry.npmjs.org/@opencode/cli-linux-x64/-/cli-linux-x64-${version}.tgz";
-      sha256 = "11d84g84098nvbzijihpvcr44lnrcwn709xihlhlcvxq12l2gcwm";
+      sha256 = "1aakgqrir52wgwvzxz4jcj7nd6x4icd7bbj7bklnkzc0s304r0m3";
     };
     dontUnpack = true;
     installPhase = ''
@@ -25,10 +25,10 @@ in {
   # release binary instead. Bump version + sha256 to upgrade.
   programs.opencode.package = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "opencode";
-    version = "1.18.5";
+    version = "1.18.32";
     src = pkgs.fetchurl {
       url = "https://github.com/anomalyco/opencode/releases/download/v${version}/opencode-linux-x64.tar.gz";
-      sha256 = "1qpaq5s8lhp645hqpnmy6jxqhcypx3mmf0jwrckhymfnldbjajnd";
+      sha256 = "0fylsrnljj45madx193q84v7fx509f14fyky620gnq6w9x0f0iih";
     };
     dontUnpack = true;
     installPhase = ''
