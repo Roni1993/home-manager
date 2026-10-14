@@ -12,6 +12,20 @@ let
       install -Dm755 $src $out/bin/twg
     '';
   };
+  # Requesty CLI (https://github.com/requestyai/cli). Bump version + sha256 to upgrade.
+  requesty = pkgs.stdenvNoCC.mkDerivation rec {
+    pname = "requesty";
+    version = "0.1.15";
+    src = pkgs.fetchurl {
+      url = "https://github.com/requestyai/cli/releases/download/v${version}/requesty_linux_amd64.tar.gz";
+      sha256 = "c0e329507458d63a8f62f99d503f9a83566a70118b163dc5d1fe73cac4637a78";
+    };
+    dontUnpack = true;
+    installPhase = ''
+      tar -xzf $src
+      install -Dm755 requesty $out/bin/requesty
+    '';
+  };
   agent-slack = pkgs.stdenvNoCC.mkDerivation {
     pname = "agent-slack";
     version = "0.10.2";
@@ -83,6 +97,7 @@ in {
   # Work-specific packages (AWS SSO toolchain + GPG/pass + WSL utils)
   home.packages = with pkgs; [
     twg
+    requesty
     agent-slack
     wsl-open
     aws-sso-cli
