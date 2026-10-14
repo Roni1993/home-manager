@@ -2,10 +2,10 @@
 let
   twg = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "twg";
-    version = "1.2.5";
+    version = "1.3.5";
     src = pkgs.fetchurl {
       url = "https://teamwork-graph.atlassian.com/cli/twg-linux-x64-v${version}";
-      hash = "sha256-vnNYJ0TYVJU4rGZS/ZAOu42KfbFNhl45xh3v1XNS54Q=";
+      hash = "sha256-1m2TIg9EDwBiecZocnTtTJJINdpOwgXMgYvBf23ZHAg=";
     };
     dontUnpack = true;
     installPhase = ''
