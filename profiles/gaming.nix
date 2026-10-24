@@ -328,7 +328,7 @@
       output_path = "~/.config/matugen/generated/steam.css"
       # CSS Loader (Decky) reads ~/homebrew/themes/<name>/theme.css; copy the
       # rendered file there so it shows up as an enablable theme.
-      post_hook = "mkdir -p ~/homebrew/themes/matugen && cp ~/.config/matugen/generated/steam.css ~/homebrew/themes/matugen/theme.css"
+      post_hook = "mkdir -p ~/homebrew/themes/matugen; cp ~/.config/matugen/generated/steam.css ~/homebrew/themes/matugen/theme.css"
     '';
   };
   home.file.".config/matugen/templates/hyprland-colors.conf" = {
