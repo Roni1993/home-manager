@@ -408,7 +408,7 @@ CONFLICT_PATHS=(
   "$HOME/.config/swaync/config.json"
   "$HOME/.config/swaync/style.css"
   "$HOME/.config/rofi/config.rasi"
-  "$HOME/.config/hypr/hyprland.conf"
+  "$HOME/.config/hypr/hyprland.lua"
   "$HOME/.config/hypr/hyprlock.conf"
   "$HOME/.config/hypr/hypridle.conf"
   "$HOME/.config/direnv/direnv.toml"
@@ -662,7 +662,7 @@ else
 fi
 
 echo -n "  Hyprland config... "
-if [ -f "$HOME/.config/hypr/hyprland.conf" ]; then
+if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
   echo "OK"
 else
   echo "MISSING"; errors=$((errors + 1))

@@ -76,172 +76,161 @@
   # exist on CachyOS, so the DRM backend fails -> black screen. The
   # system build links against system mesa + NVIDIA stack (same as KDE).
   # Config is managed here via home.file instead of the HM module.
-  home.file.".config/hypr/hyprland.conf" = {
+  home.file.".config/hypr/hyprland.lua" = {
     text = ''
-      $mod=SUPER
-      # matugen-generated palette (wallpaper-driven); absent until `matugen
-      # image <wall>` runs — hyprland warns but continues.
-      source = ~/.config/hypr/hyprland-colors.conf
-      exec-once=/usr/bin/dbus-update-activation-environment --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+      -- Managed by home-manager (profiles/gaming.nix). Do not edit.
+      -- Hyprland 0.56 Lua config: hyprlang `.conf` support is removed in 0.57.
+      local mod = "SUPER"
 
-      env=XCURSOR_SIZE,24
-      env=XDG_CURRENT_DESKTOP,Hyprland
-      env=XDG_SESSION_TYPE,wayland
-      env=XDG_SESSION_DESKTOP,Hyprland
-      env=QT_QPA_PLATFORM,wayland;xcb
-      env=QT_WAYLAND_DISABLE_WINDOWDECORATION,1
-      env=SDL_VIDEODRIVER,wayland
-      env=MOZ_ENABLE_WAYLAND,1
-      # NVIDIA VA-API hw decode for the nix Firefox: select the system
-      # libva-nvidia-driver and let the RDD process open /dev/nvidia*.
-      env=LIBVA_DRIVER_NAME,nvidia
-      env=LIBVA_DRIVERS_PATH,/usr/lib/dri
-      env=NVD_BACKEND,direct
-      env=MOZ_DISABLE_RDD_SANDBOX,1
-      env=GDK_BACKEND,wayland,x11
-
-      exec-once=awww-daemon
-      exec-once=hypridle
-      # Respawn vicinae on crash (it ABRTs occasionally, e.g. after the
-      # 0.28.1 upgrade); stop respawning on clean exit or SIGTERM (logout).
-      # Restarts are appended to ~/.local/state/vicinae-respawn.log.
-      exec-once=sh -c 'while true; do vicinae server; c=$?; [ "$c" -eq 0 ] && exit 0; echo "$(date +%FT%T) vicinae server exited with code $c — respawning" >> ~/.local/state/vicinae-respawn.log; sleep 2; done'
-      # waybar + swaync are started by their HM systemd user services (no
-      # exec-once — a second launch makes the service fail with "instance
-      # already running" and hit start-limit). Re-apply the theme after login
-      # so all matugen outputs match the persisted mode/wallpaper (kitty etc.
-      # read them fresh at startup).
-      exec-once=sh -c 'sleep 3; ~/.local/bin/apply-theme.sh "$(cat ~/.cache/theme-mode 2>/dev/null || echo dark)"'
-      # clipboard history is vicinae-native (Super+V); no cliphist.
-      exec-once=/usr/lib/hyprpolkitagent/hyprpolkitagent
-      # env import happens once, at the top of this file (the
-      # dbus-update-activation-environment exec-once above covers DISPLAY,
-      # WAYLAND_DISPLAY, XDG_* and HYPRLAND_INSTANCE_SIGNATURE).
-
-      monitor=,preferred,auto,1
-
-      input {
-        kb_layout=us
-        follow_mouse=1
-        touchpad {
-          natural_scroll=true
-        }
+      -- Palette: matugen writes ~/.config/hypr/hyprland-colors.lua at runtime.
+      -- require() is re-executed on every hyprctl reload, so theme switches
+      -- apply live. Defaults keep Hyprland alive before the first theme run.
+      local pal = {
+        primary = "rgba(ffffffff)",
+        secondary = "rgba(ffffffff)",
+        outline_variant = "rgba(ffffffff)",
       }
+      local ok, generated = pcall(require, "hyprland-colors")
+      if ok and type(generated) == "table" then
+        for key, value in pairs(generated) do
+          pal[key] = value
+        end
+      end
 
-      general {
-        gaps_in=5
-        gaps_out=10
-        border_size=2
-        col.active_border=$primary $secondary
-        col.inactive_border=$outline_variant
-        layout=dwindle
-      }
+      -- ── Environment ──
+      hl.env("XCURSOR_SIZE", "24")
+      hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
+      hl.env("XDG_SESSION_TYPE", "wayland")
+      hl.env("XDG_SESSION_DESKTOP", "Hyprland")
+      hl.env("QT_QPA_PLATFORM", "wayland;xcb")
+      hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
+      hl.env("SDL_VIDEODRIVER", "wayland")
+      hl.env("MOZ_ENABLE_WAYLAND", "1")
+      -- NVIDIA VA-API hw decode for the nix Firefox: select the system
+      -- libva-nvidia-driver and let the RDD process open /dev/nvidia*.
+      hl.env("LIBVA_DRIVER_NAME", "nvidia")
+      hl.env("LIBVA_DRIVERS_PATH", "/usr/lib/dri")
+      hl.env("NVD_BACKEND", "direct")
+      hl.env("MOZ_DISABLE_RDD_SANDBOX", "1")
+      hl.env("GDK_BACKEND", "wayland,x11")
 
-      decoration {
-        rounding=10
-        blur {
-          enabled=true
-          size=3
-          passes=1
-          new_optimizations=true
-        }
-        shadow {
-          enabled=true
-          range=4
-          render_power=3
-          color=rgba(1a1a1aee)
-        }
-      }
+      -- ── Autostart (fires once at session start, the exec-once equivalent) ──
+      hl.on("hyprland.start", function()
+        hl.exec_cmd("/usr/bin/dbus-update-activation-environment --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
+        hl.exec_cmd("awww-daemon")
+        hl.exec_cmd("hypridle")
+        -- Respawn vicinae on crash (it ABRTs occasionally); stop on clean
+        -- exit/SIGTERM (logout). Restarts appended to the state log.
+        hl.exec_cmd([==[while true; do vicinae server; c=$?; [ "$c" -eq 0 ] && exit 0; echo "$(date +%FT%T) vicinae server exited with code $c — respawning" >> ~/.local/state/vicinae-respawn.log; sleep 2; done]==])
+        -- graphical-session.target never activates under system Hyprland
+        -- (RefuseManualStart), so the HM units WantedBy it — waybar, swaync,
+        -- opencode-idle-guard — are never pulled in. Push the Wayland env into
+        -- the systemd user manager, then start them directly. waybar's unit
+        -- waits for the socket and retries (see systemd.user.services.waybar).
+        hl.exec_cmd("systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE; systemctl --user start waybar.service swaync.service opencode-idle-guard.service")
+        -- Re-apply the theme after login so all matugen outputs match the
+        -- persisted mode/wallpaper (kitty etc. read them fresh at startup).
+        hl.exec_cmd([==[sleep 3; ~/.local/bin/apply-theme.sh "$(cat ~/.cache/theme-mode 2>/dev/null || echo dark)"]==])
+        -- clipboard history is vicinae-native (Super+V); no cliphist.
+        hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
+      end)
 
-      animations {
-        enabled=true
-        bezier=myBezier, 0.05, 0.9, 0.1, 1.05
-        bezier=linear, 0, 0, 1, 1
-        animation=windows, 1, 7, myBezier
-        animation=windowsOut, 1, 7, default, popin 80%
-        animation=border, 1, 10, default
-        animation=fade, 1, 7, default
-        animation=workspaces, 1, 6, default
-      }
+      -- ── Monitor ──
+      hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
 
-      misc {
-        disable_hyprland_logo=true
-        disable_splash_rendering=true
-      }
+      -- ── Look and feel ──
+      hl.config({
+        general = {
+          gaps_in = 5,
+          gaps_out = 10,
+          border_size = 2,
+          col = {
+            active_border = { colors = { pal.primary, pal.secondary }, angle = 45 },
+            inactive_border = pal.outline_variant,
+          },
+          layout = "dwindle",
+        },
+        decoration = {
+          rounding = 10,
+          blur = {
+            enabled = true,
+            size = 3,
+            passes = 1,
+            new_optimizations = true,
+          },
+          shadow = {
+            enabled = true,
+            range = 4,
+            render_power = 3,
+            color = "rgba(1a1a1aee)",
+          },
+        },
+        animations = { enabled = true },
+        misc = {
+          disable_hyprland_logo = true,
+          disable_splash_rendering = true,
+        },
+        render = { direct_scanout = 1 },
+        dwindle = { preserve_split = true },
+        master = { new_on_top = true },
+        input = {
+          kb_layout = "us",
+          follow_mouse = 1,
+          touchpad = { natural_scroll = true },
+        },
+      })
 
-      render {
-        direct_scanout=true
-      }
+      hl.curve("myBezier", { type = "bezier", points = { { 0.05, 0.9 }, { 0.1, 1.05 } } })
+      hl.curve("linear", { type = "bezier", points = { { 0, 0 }, { 1, 1 } } })
+      hl.animation({ leaf = "windows", enabled = true, speed = 7, bezier = "myBezier" })
+      hl.animation({ leaf = "windowsOut", enabled = true, speed = 7, bezier = "default", style = "popin 80%" })
+      hl.animation({ leaf = "border", enabled = true, speed = 10, bezier = "default" })
+      hl.animation({ leaf = "fade", enabled = true, speed = 7, bezier = "default" })
+      hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "default" })
 
-      dwindle {
-        preserve_split=true
-      }
+      -- ── Keybinds ──
+      hl.bind(mod .. " + RETURN", hl.dsp.exec_cmd("kitty"))
+      hl.bind(mod .. " + Q", hl.dsp.window.close())
+      hl.bind(mod .. " + M", hl.dsp.exit())
+      hl.bind(mod .. " + E", hl.dsp.exec_cmd("nautilus"))
+      hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
+      hl.bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
+      hl.bind(mod .. " + R", hl.dsp.exec_cmd("vicinae toggle"))
+      hl.bind(mod .. " + P", hl.dsp.window.pseudo())
+      hl.bind(mod .. " + SPACE", hl.dsp.exec_cmd("vicinae toggle"))
+      hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))
+      hl.bind(mod .. " + T", hl.dsp.exec_cmd("~/.local/bin/theme-toggle"))
+      hl.bind(mod .. " + W", hl.dsp.exec_cmd("~/.local/bin/rotate-wallpaper.sh"))
+      -- clipboard history (Super+V → vicinae clipboard:history)
+      hl.bind(mod .. " + V", hl.dsp.exec_cmd("vicinae cmd launch clipboard:history"))
 
-      master {
-        new_on_top=true
-      }
+      hl.bind("PRINT", hl.dsp.exec_cmd("hyprshot -m region"))
+      hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region"))
+      hl.bind(mod .. " + PRINT", hl.dsp.exec_cmd("hyprshot -m output"))
+      hl.bind(mod .. " + N", hl.dsp.exec_cmd("swaync-client -t"))
 
-      bind=$mod, RETURN, exec, kitty
-      bind=$mod, Q, killactive
-      bind=$mod, M, exit
-      bind=$mod, E, exec, nautilus
-      bind=$mod, F, fullscreen
-      bind=$mod SHIFT, SPACE, togglefloating
-      bind=$mod, R, exec, vicinae toggle
-      bind=$mod, P, pseudo
-      bind=$mod, SPACE, exec, vicinae toggle
-      bind=$mod, L, exec, hyprlock
-      bind=$mod, T, exec, ~/.local/bin/theme-toggle
-      bind=$mod, W, exec, ~/.local/bin/rotate-wallpaper.sh
+      for i = 1, 10 do
+        local key = i % 10
+        hl.bind(mod .. " + " .. key, hl.dsp.focus({ workspace = i }))
+        hl.bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i, follow = false }))
+      end
 
-      bind=, PRINT, exec, hyprshot -m region
-      bind=$mod SHIFT, S, exec, hyprshot -m region
-      bind=$mod, PRINT, exec, hyprshot -m output
-      bind=$mod, N, exec, swaync-client -t
+      hl.bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+      hl.bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
-      # clipboard history (Super+V → vicinae clipboard:history) bind lives
-      # in matugen/hyprland-colors.tmpl (sourced by hyprland.conf) so it also
-      # works pre-rebuild and survives reloads.
+      hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("pactl set-sink-volume @DEFAULT_SINK@ +5%"), { repeating = true })
+      hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("pactl set-sink-volume @DEFAULT_SINK@ -5%"), { repeating = true })
+      hl.bind("XF86AudioMute", hl.dsp.exec_cmd("pactl set-sink-mute @DEFAULT_SINK@ toggle"), { repeating = true })
 
-      bind=$mod, 1, workspace, 1
-      bind=$mod, 2, workspace, 2
-      bind=$mod, 3, workspace, 3
-      bind=$mod, 4, workspace, 4
-      bind=$mod, 5, workspace, 5
-      bind=$mod, 6, workspace, 6
-      bind=$mod, 7, workspace, 7
-      bind=$mod, 8, workspace, 8
-      bind=$mod, 9, workspace, 9
-      bind=$mod, 0, workspace, 10
+      hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+      hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
+      hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 
-      bind=$mod SHIFT, 1, movetoworkspacesilent, 1
-      bind=$mod SHIFT, 2, movetoworkspacesilent, 2
-      bind=$mod SHIFT, 3, movetoworkspacesilent, 3
-      bind=$mod SHIFT, 4, movetoworkspacesilent, 4
-      bind=$mod SHIFT, 5, movetoworkspacesilent, 5
-      bind=$mod SHIFT, 6, movetoworkspacesilent, 6
-      bind=$mod SHIFT, 7, movetoworkspacesilent, 7
-      bind=$mod SHIFT, 8, movetoworkspacesilent, 8
-      bind=$mod SHIFT, 9, movetoworkspacesilent, 9
-      bind=$mod SHIFT, 0, movetoworkspacesilent, 10
+      hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
+      hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
-      bind=$mod, mouse_down, workspace, e+1
-      bind=$mod, mouse_up, workspace, e-1
-
-      binde=, XF86AudioRaiseVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ +5%
-      binde=, XF86AudioLowerVolume, exec, pactl set-sink-volume @DEFAULT_SINK@ -5%
-      binde=, XF86AudioMute, exec, pactl set-sink-mute @DEFAULT_SINK@ toggle
-
-      bindl=, XF86AudioPlay, exec, playerctl play-pause
-      bindl=, XF86AudioNext, exec, playerctl next
-      bindl=, XF86AudioPrev, exec, playerctl previous
-
-      bindm=$mod, mouse:272, movewindow
-      bindm=$mod, mouse:273, resizewindow
-
-      # 0.56 windowrule syntax: `<rule> <match>` (space-separated, no comma).
-      # fullscreen works; noblur/nomaximizerequest were removed in 0.56.
-      windowrule=fullscreen class:^(.*.exe)$
+      -- Fullscreen every `*.exe` (Proton/Wine games).
+      hl.window_rule({ name = "fullscreen-exe", match = { class = "^(.*\\.exe)$" }, fullscreen = true })
     '';
   };
 
@@ -250,7 +239,7 @@
   # then injects six ANSI hues sampled from the wallpaper's actual hue
   # distribution (Material fixed hues as fallback for empty slots), and renders
   # config.toml + kitty.toml. HM manages matugen's config + templates; the
-  # generated files (~/.config/hypr/hyprland-colors.conf etc.) are matugen-owned
+  # generated files (~/.config/hypr/hyprland-colors.lua etc.) are matugen-owned
   # runtime configs. Re-run with:
   #   python3 ~/.config/matugen/palette.py ~/Pictures/wallpaper.jpg dark
   home.file.".config/matugen/config.toml" = {
@@ -262,8 +251,8 @@
       [templates.hyprland]
       # absolute path: config.toml is a nix-store symlink, so relative
       # input_paths would resolve into the store
-      input_path = "~/.config/matugen/templates/hyprland-colors.conf"
-      output_path = "~/.config/hypr/hyprland-colors.conf"
+      input_path = "~/.config/matugen/templates/hyprland-colors.lua"
+      output_path = "~/.config/hypr/hyprland-colors.lua"
 
       [templates.waybar]
       input_path = "~/.config/matugen/templates/waybar-style.css"
@@ -331,7 +320,7 @@
       post_hook = "mkdir -p ~/homebrew/themes/matugen && cp ~/.config/matugen/generated/steam.css ~/homebrew/themes/matugen/theme.css"
     '';
   };
-  home.file.".config/matugen/templates/hyprland-colors.conf" = {
+  home.file.".config/matugen/templates/hyprland-colors.lua" = {
     source = ./matugen/hyprland-colors.tmpl;
   };
   home.file.".config/matugen/kitty.toml" = {
@@ -776,6 +765,26 @@
       };
     };
     # style.css is generated by matugen (see "Dynamic theming" above)
+  };
+
+  # Hardening for the HM waybar systemd unit.
+  # At login graphical-session.target can start waybar before Hyprland's
+  # Wayland socket exists; waybar then exits with "cannot open display",
+  # burns its 5 on-failure retries in <10s, and stays dead via
+  # start-limit-hit. Wait for the socket, retry patiently, never give up.
+  systemd.user.services.waybar = {
+    Unit.StartLimitIntervalSec = 0;
+    Service = {
+      Restart = lib.mkForce "always";
+      RestartSec = 2;
+      ExecStartPre = "${pkgs.writeShellScript "wait-wayland" ''
+        for _ in $(seq 1 50); do
+          [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && exit 0
+          sleep 0.2
+        done
+        exit 1
+      ''}";
+    };
   };
 
   # ── Wallpaper rotation ──
