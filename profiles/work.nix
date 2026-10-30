@@ -101,6 +101,7 @@ in {
     agent-slack
     wsl-open
     aws-sso-cli
+    mongodb-atlas-cli # `atlas` CLI for MongoDB Atlas
     pass
     gnupg
     # rtk (Rust Token Killer, https://github.com/rtk-ai/rtk) — CLI proxy that

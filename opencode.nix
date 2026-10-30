@@ -34,6 +34,9 @@ in {
   home.file = {
     ".config/opencode/AGENTS.md".source = ./opencode/global-rules.md;
 
+    # Requesty: the org policy rejects the global router.requesty.ai host, so
+    # route through the EU regional domain. Without this override OpenCode and
+    # oc2 fall back to the catalog default and fail.
     ".config/opencode/opencode.jsonc" = {
       text = ''{
   "$schema": "https://opencode.ai/config.json",
@@ -42,6 +45,13 @@ in {
     "opencode-pty",
     "opencode-cmd-provider"
   ],
+  "provider": {
+    "requesty": {
+      "options": {
+        "baseURL": "https://router.eu.requesty.ai/v1"
+      }
+    }
+  },
   "references": {
     "fleek-docs": {
       "path": "~/projects/fleek/docs",
