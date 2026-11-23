@@ -3,10 +3,10 @@ let
   completionSpec = name: text: pkgs.writeText "carapace-${name}.yaml" text;
   opencode2 = pkgs.stdenvNoCC.mkDerivation rec {
     pname = "opencode2";
-    version = "2.0.14";
+    version = "2.2.0";
     src = pkgs.fetchurl {
       url = "https://registry.npmjs.org/@opencode/cli-linux-x64/-/cli-linux-x64-${version}.tgz";
-      sha256 = "1aakgqrir52wgwvzxz4jcj7nd6x4icd7bbj7bklnkzc0s304r0m3";
+      sha256 = "0a50ihdqk313i2ckl44kq7zyzwd10548y1b84bv29rkjd2w4cc7y";
     };
     dontUnpack = true;
     installPhase = ''
